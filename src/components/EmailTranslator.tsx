@@ -20,6 +20,7 @@ export default function EmailTranslator({ products, selectedBuyer, onLogEmail }:
   const [translating, setTranslating] = useState(false);
   const [sending, setSending] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const activeProduct = products.find(p => p.id === selectedProductId);
 
@@ -123,7 +124,8 @@ export default function EmailTranslator({ products, selectedBuyer, onLogEmail }:
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    alert("Copied to clipboard!");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const languages = ["German", "French", "Spanish", "Italian", "Chinese", "Arabic"];
