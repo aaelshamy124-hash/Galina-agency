@@ -1,0 +1,6 @@
+{
+  "name": "Galina Smart Export AI",
+  "description": "Galina Smart Export AI is an intelligent B2B export intelligence and CRM platform designed for Galina to explore global IQF markets, evaluate opportunities, draft multi-lingual email pitches, and manage prospects.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
