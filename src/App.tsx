@@ -341,7 +341,7 @@ export default function App() {
           )}
 
           {activeTab === "advisor" && (
-            <AIAssistant />
+            <AIAssistant onAddProspect={handleAddProspect} />
           )}
 
           {activeTab === "pitch" && (

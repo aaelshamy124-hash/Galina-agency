@@ -76,6 +76,30 @@ export interface ProspectBuyer {
   realPhone?: string;
   headquartersAddress?: string;
   contactVerified?: boolean;
+  emailVerificationStatus?: EmailVerificationStatus;
+  emailVerificationSource?: string;
+  emailVerificationDate?: string;
+}
+
+export type EmailVerificationStatus = 
+  | "VERIFIED – OFFICIAL COMPANY SOURCE"
+  | "VERIFIED – PUBLICLY CONFIRMED"
+  | "DOMAIN/MX VERIFIED – EMAIL NOT CONFIRMED"
+  | "NOT VERIFIED"
+  | "NO VERIFIED EMAIL FOUND";
+
+export interface VerifiedLeadRecord {
+  id?: string;
+  company: string;
+  country: string;
+  contactPerson: string;
+  position: string;
+  email: string;
+  verificationStatus: EmailVerificationStatus;
+  source: string;
+  verificationDate: string;
+  domain?: string;
+  notes?: string;
 }
 
 export interface Supplier {
