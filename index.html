@@ -20,30 +20,63 @@
         }
       })();
 
-      // 2. Global capture-phase error listener (catches script/css 404 load failures)
+      // 2. Smart Self-Healing Loader:
+      // If /src/main.tsx fails to load (because GitHub Pages is serving static repository files directly without Vite dev server),
+      // seamlessly load the pre-compiled production bundle from ./assets/app.js & ./assets/app.css!
       window.addEventListener('error', function(e) {
+        var target = e.target || {};
+        var src = target.src || '';
+
+        if (target.tagName === 'SCRIPT' && src.indexOf('/src/main.tsx') !== -1) {
+          if (e.preventDefault) e.preventDefault();
+          console.warn("[Galina] Static host detected (/src/main.tsx not supported). Loading compiled production bundle...");
+
+          // Calculate base path for current deployment (user page root or subpath repo)
+          var path = window.location.pathname;
+          var basePath = path.endsWith('/') ? path : path.substring(0, path.lastIndexOf('/') + 1);
+
+          // 1. Inject production CSS
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = basePath + 'assets/index.css';
+          document.head.appendChild(link);
+
+          // 2. Inject production JS bundle
+          var script = document.createElement('script');
+          script.type = 'module';
+          script.crossOrigin = 'anonymous';
+          script.src = basePath + 'assets/app.js';
+          script.onerror = function() {
+            var loader = document.querySelector('.initial-loader');
+            if (loader) {
+              loader.innerHTML = '<div style="max-width:28rem;padding:2rem;background:#1e293b;border:1px solid #334155;border-radius:1rem;text-align:center;">' +
+                '<div style="font-size:2rem;margin-bottom:0.75rem;">⚠️</div>' +
+                '<h2 style="font-size:1.2rem;font-weight:bold;color:#f1f5f9;margin-bottom:0.5rem;">Bundle Loading Notice</h2>' +
+                '<p style="font-size:0.8rem;color:#94a3b8;margin-bottom:1.25rem;">Could not load bundle at ' + script.src + '</p>' +
+                '<button onclick="window.location.reload(true)" style="background:#0d9488;color:#fff;border:none;padding:0.6rem 1.25rem;border-radius:0.75rem;cursor:pointer;">Reload</button>' +
+                '</div>';
+            }
+          };
+          document.body.appendChild(script);
+          return;
+        }
+
+        // Generic error handler
         var root = document.getElementById('root');
         var loader = root ? root.querySelector('.initial-loader') : null;
-        if (loader) {
-          var target = e.target || {};
-          var src = target.src || target.href || '';
-          var msg = e.message || (src ? 'Failed to load script resource: ' + src : 'Application initialization error');
-          loader.innerHTML = '<div style="max-width:28rem;padding:2rem;background:#1e293b;border:1px solid #334155;border-radius:1rem;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">' +
-            '<div style="width:3rem;height:3rem;border-radius:0.75rem;background:rgba(239,68,68,0.2);color:#f87171;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.5rem;font-weight:bold;">!</div>' +
+        if (loader && !loader.querySelector('#loader-err')) {
+          var targetSrc = target.src || target.href || '';
+          if (targetSrc.indexOf('/src/main.tsx') !== -1) return; // handled above
+
+          var msg = e.message || (targetSrc ? 'Failed to load: ' + targetSrc : 'Initialization error');
+          loader.innerHTML = '<div id="loader-err" style="max-width:28rem;padding:2rem;background:#1e293b;border:1px solid #334155;border-radius:1rem;text-align:center;">' +
+            '<div style="font-size:2rem;margin-bottom:0.75rem;">⚠️</div>' +
             '<h2 style="font-size:1.2rem;font-weight:bold;color:#f1f5f9;margin-bottom:0.5rem;">Resource Loading Notice</h2>' +
             '<p style="font-size:0.8rem;color:#94a3b8;margin-bottom:1.25rem;line-height:1.4;">' + msg + '</p>' +
-            '<button onclick="window.location.reload(true)" style="background:#0d9488;color:#fff;border:none;padding:0.6rem 1.25rem;border-radius:0.75rem;font-weight:600;font-size:0.85rem;cursor:pointer;width:100%;">Reload Application</button>' +
+            '<button onclick="window.location.reload(true)" style="background:#0d9488;color:#fff;border:none;padding:0.6rem 1.25rem;border-radius:0.75rem;font-weight:600;font-size:0.85rem;cursor:pointer;">Reload Application</button>' +
             '</div>';
         }
       }, true);
-
-      // 3. Fallback watchdog: if app hasn't mounted after 5s, reveal manual retry notice
-      setTimeout(function() {
-        var notice = document.getElementById('loader-watchdog');
-        if (notice && document.querySelector('.initial-loader')) {
-          notice.style.display = 'block';
-        }
-      }, 5000);
     </script>
   </head>
   <body>
@@ -54,11 +87,6 @@
           <div style="width: 44px; height: 44px; border: 3px solid rgba(13, 148, 136, 0.2); border-top-color: #0d9488; border-radius: 50%; margin: 0 auto 1.25rem; animation: spin 0.8s linear infinite;"></div>
           <h2 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem; letter-spacing: -0.01em; color: #f1f5f9;">GALINA EXPORT ADVISOR AI</h2>
           <p style="font-size: 0.8rem; color: #94a3b8; letter-spacing: 0.02em;">Loading Global Export Intelligence Platform...</p>
-
-          <div id="loader-watchdog" style="display: none; margin-top: 1.5rem; padding: 0.75rem 1rem; background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem;">
-            <p style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.5rem;">Connection delay detected. Tap below to reload:</p>
-            <button onclick="window.location.reload(true)" style="background: #0d9488; color: #ffffff; border: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; width: 100%;">Refresh Page</button>
-          </div>
         </div>
         <style>
           @keyframes spin { to { transform: rotate(360deg); } }
