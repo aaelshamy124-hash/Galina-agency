@@ -8,10 +8,41 @@
     <meta property="og:title" content="Galina Export Advisor AI" />
     <meta property="og:description" content="Rapid international client verification with live source checks, official websites, procurement contacts, and B2B produce export intelligence." />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230d9488'><circle cx='12' cy='12' r='10'/></svg>" />
+    <script>
+      // Automatically normalize GitHub Pages subpath trailing slash so relative assets resolve properly
+      if (window.location.pathname.endsWith('/Galina-agency')) {
+        window.location.replace(window.location.pathname + '/' + window.location.search + window.location.hash);
+      }
+      
+      // Global error listener to prevent blank white page if a script fails to load
+      window.addEventListener('error', function(e) {
+        var root = document.getElementById('root');
+        if (root && (!root.children.length || root.querySelector('.initial-loader'))) {
+          root.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;color:#f8fafc;font-family:system-ui,sans-serif;padding:1.5rem;">' +
+            '<div style="max-width:28rem;width:100%;background:#1e293b;border:1px solid #334155;border-radius:1rem;padding:2rem;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">' +
+            '<div style="width:3rem;height:3rem;border-radius:0.75rem;background:rgba(239,68,68,0.2);color:#f87171;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.5rem;font-weight:bold;">!</div>' +
+            '<h2 style="font-size:1.25rem;font-weight:bold;margin-bottom:0.5rem;">Galina Export Platform Notice</h2>' +
+            '<p style="font-size:0.875rem;color:#94a3b8;margin-bottom:1.5rem;">The application bundle encountered a loading issue. Please refresh the page or clear your browser cache.</p>' +
+            '<button onclick="window.location.reload(true)" style="background:#0d9488;color:#fff;border:none;padding:0.625rem 1.25rem;border-radius:0.75rem;font-weight:600;font-size:0.875rem;cursor:pointer;width:100%;">Reload Application</button>' +
+            '</div></div>';
+        }
+      });
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Branded initial loading screen (replaced automatically once React mounts) -->
+      <div class="initial-loader" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif;">
+        <div style="text-align: center; padding: 2rem;">
+          <div style="width: 44px; height: 44px; border: 3px solid rgba(13, 148, 136, 0.2); border-top-color: #0d9488; border-radius: 50%; margin: 0 auto 1.25rem; animation: spin 0.8s linear infinite;"></div>
+          <h2 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem; letter-spacing: -0.01em; color: #f1f5f9;">GALINA EXPORT ADVISOR AI</h2>
+          <p style="font-size: 0.8rem; color: #94a3b8; letter-spacing: 0.02em;">Loading Global Export Intelligence Platform...</p>
+        </div>
+        <style>
+          @keyframes spin { to { transform: rotate(360deg); } }
+        </style>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

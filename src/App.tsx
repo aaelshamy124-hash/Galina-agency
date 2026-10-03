@@ -23,22 +23,37 @@ import Reports from "./components/Reports";
 import { useLanguage } from "./context/LanguageContext";
 
 export default function App() {
-  // Shared States (synchronized with localStorage)
+  // Shared States (synchronized with localStorage safely)
   const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem("galina_products");
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem("galina_products") : null;
+      return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+    } catch (e) {
+      console.warn("Safe fallback for galina_products:", e);
+      return INITIAL_PRODUCTS;
+    }
   });
 
   const [countries] = useState<Country[]>(INITIAL_COUNTRIES);
 
   const [buyers, setBuyers] = useState<ProspectBuyer[]>(() => {
-    const saved = localStorage.getItem("galina_buyers");
-    return saved ? JSON.parse(saved) : INITIAL_BUYERS;
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem("galina_buyers") : null;
+      return saved ? JSON.parse(saved) : INITIAL_BUYERS;
+    } catch (e) {
+      console.warn("Safe fallback for galina_buyers:", e);
+      return INITIAL_BUYERS;
+    }
   });
 
   const [suppliers, setSuppliers] = useState<Supplier[]>(() => {
-    const saved = localStorage.getItem("galina_suppliers");
-    return saved ? JSON.parse(saved) : INITIAL_SUPPLIERS;
+    try {
+      const saved = typeof window !== "undefined" ? localStorage.getItem("galina_suppliers") : null;
+      return saved ? JSON.parse(saved) : INITIAL_SUPPLIERS;
+    } catch (e) {
+      console.warn("Safe fallback for galina_suppliers:", e);
+      return INITIAL_SUPPLIERS;
+    }
   });
 
   const [activeTab, setActiveTab] = useState<string>("dashboard");
@@ -47,17 +62,29 @@ export default function App() {
   // User simulation role
   const [userRole, setUserRole] = useState<"Export Director" | "Sales Executive" | "CEO">("Export Director");
 
-  // Sync to local storage
+  // Sync to local storage safely
   useEffect(() => {
-    localStorage.setItem("galina_products", JSON.stringify(products));
+    try {
+      localStorage.setItem("galina_products", JSON.stringify(products));
+    } catch (e) {
+      console.warn("Could not save products to localStorage", e);
+    }
   }, [products]);
 
   useEffect(() => {
-    localStorage.setItem("galina_buyers", JSON.stringify(buyers));
+    try {
+      localStorage.setItem("galina_buyers", JSON.stringify(buyers));
+    } catch (e) {
+      console.warn("Could not save buyers to localStorage", e);
+    }
   }, [buyers]);
 
   useEffect(() => {
-    localStorage.setItem("galina_suppliers", JSON.stringify(suppliers));
+    try {
+      localStorage.setItem("galina_suppliers", JSON.stringify(suppliers));
+    } catch (e) {
+      console.warn("Could not save suppliers to localStorage", e);
+    }
   }, [suppliers]);
 
   // Event handlers
