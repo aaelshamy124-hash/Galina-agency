@@ -11,6 +11,7 @@ import { INITIAL_BUYERS } from "../data";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useLanguage } from "../context/LanguageContext";
+import { leadDatabase } from "../services/leadDatabase";
 
 interface MarketFinderProps {
   products: Product[];
@@ -22,6 +23,8 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
   const { lang, t } = useLanguage();
   const [selectedProductId, setSelectedProductId] = useState(products[0]?.id || "");
   const [selectedCountryId, setSelectedCountryId] = useState(countries[0]?.id || "");
+  const [verificationMode, setVerificationMode] = useState<"High Accuracy" | "Strict" | "Balanced" | "Fast">("High Accuracy");
+  const [searchAuditSummary, setSearchAuditSummary] = useState<any | null>(null);
   
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<any | null>(null);
@@ -53,11 +56,61 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
   const selectedProduct = products.find(p => p.id === selectedProductId);
   const selectedCountry = countries.find(c => c.id === selectedCountryId);
 
+  const finalizeReportWithVerification = (baseData: any, rawProspects: any[]) => {
+    const batchResult = leadDatabase.processSearchResultsBatch(rawProspects, {
+      product: selectedProduct!.name,
+      country: selectedCountry!.name,
+      query: `${selectedProduct!.name} ${selectedCountry!.name}`,
+      mode: verificationMode
+    });
+
+    setSearchAuditSummary(batchResult.summary);
+
+    const mappedProspects = batchResult.qualifiedLeads.map(l => ({
+      id: l.lead_id,
+      name: l.company_name,
+      country: l.country,
+      city: l.city,
+      website: l.official_website,
+      email: l.email,
+      phone: l.phone,
+      linkedIn: l.linkedin_company_url,
+      purchasingManager: l.contact_person,
+      procurementRole: l.contact_job_title,
+      importerType: l.business_type,
+      companySize: "Large",
+      employees: 250,
+      yearsInBusiness: 15,
+      importsFromEgypt: true,
+      importsFromTurkey: false,
+      importsFromChina: false,
+      importsFromIndia: false,
+      competitiveOpportunity: l.reason_for_buyer_relevance,
+      aiScore: l.lead_quality_score,
+      status: "New Lead",
+      emailsSentCount: 0,
+      sourcingChannel: "IQF Frozen Foods",
+      intentSignalScore: l.lead_quality_score,
+      requiredCrops: l.product_categories || [selectedProduct!.name],
+      emailVerificationStatus: l.email_verification_status === "VERIFIED" ? "VERIFIED – OFFICIAL COMPANY SOURCE" : "NOT VERIFIED",
+      emailVerificationSource: l.email_verification_reason,
+      emailVerificationDate: l.verification_date,
+      source_evidence: l.source_evidence,
+      source_urls: l.source_urls
+    }));
+
+    setReport({
+      ...baseData,
+      prospects: mappedProspects
+    });
+  };
+
   const handleGenerate = async () => {
     if (!selectedProduct || !selectedCountry) return;
     setLoading(true);
     setError(null);
     setReport(null);
+    setSearchAuditSummary(null);
     setImportedIds([]);
     setSelectedBuyerIds([]);
     setExpandedBuyerId(null);
@@ -88,7 +141,7 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
       }
 
       const data = await response.json();
-      setReport(data);
+      finalizeReportWithVerification(data, data.prospects || []);
     } catch (err: any) {
       console.warn("API unavailable, falling back to verified static client directory:", err);
       // Generate client-side verified report (100% resilient for GitHub Pages static hosting)
@@ -189,7 +242,7 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
         };
       });
 
-      setReport({
+      finalizeReportWithVerification({
         opportunityScore: 94,
         marketAnalysis: `High sustained demand for Egyptian ${selectedProduct.name} in ${selectedCountry.name}. Regional supply chain disruptions and seasonal harvest deficits make direct Egyptian contracts highly attractive for commercial buyers.`,
         targetCrops: [selectedProduct.name],
@@ -201,9 +254,8 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
           shippingFeasibility: 95
         },
         recommendedAction: `Initiate direct outreach to Category Procurement Directors presenting Galina's BRCGS Grade AA and IFS Food certification dossiers and FOB/CFR pricing sheets.`,
-        riskAssessment: `Ensure container temperature logs are continuously recorded with digital data loggers maintaining -18°C set point.`,
-        prospects: fallbackProspects
-      });
+        riskAssessment: `Ensure container temperature logs are continuously recorded with digital data loggers maintaining -18°C set point.`
+      }, fallbackProspects);
     } finally {
       setLoading(false);
     }
@@ -613,7 +665,7 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
       </div>
 
       {/* Select Box Block */}
-      <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+      <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
             <span>{t("step1Crop")}</span>
@@ -644,15 +696,83 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
           </select>
         </div>
 
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
+            <span>Verification Mode</span>
+            <span className="text-[10px] text-teal-600 font-semibold">(Anti-Duplicate)</span>
+          </label>
+          <select 
+            value={verificationMode}
+            onChange={e => setVerificationMode(e.target.value as any)}
+            className="w-full text-xs p-2.5 border border-slate-200 rounded-lg bg-slate-50 font-medium text-slate-700 focus:outline-none focus:border-teal-500 focus:bg-white transition"
+          >
+            <option value="High Accuracy">High Accuracy (Default - Score ≥ 70)</option>
+            <option value="Strict">Strict Mode (High Precision - Score ≥ 80)</option>
+            <option value="Balanced">Balanced (Standard - Score ≥ 60)</option>
+            <option value="Fast">Fast (Exploratory - Score ≥ 50)</option>
+          </select>
+        </div>
+
         <button
           onClick={handleGenerate}
           disabled={loading}
           className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-700 hover:from-teal-700 hover:to-emerald-800 text-white font-bold text-xs py-2.5 rounded-lg shadow-sm disabled:opacity-50 transition cursor-pointer"
         >
           <Sparkles size={15} className={loading ? "animate-spin" : "animate-pulse"} />
-          <span>{loading ? t("generatingWait") : (lang === "ar" ? "تحليل السوق وتوليد 50 مشترياً معتمداً" : "Generate 50 Verified Produce Buyers")}</span>
+          <span>{loading ? t("generatingWait") : (lang === "ar" ? "تحليل وتوليد المشترين المعتمدين" : "Generate Verified Produce Buyers")}</span>
         </button>
       </div>
+
+      {/* Search Audit Transparency Summary (Requirement #48) */}
+      {searchAuditSummary && (
+        <div className="bg-slate-900 border border-slate-800 text-slate-100 p-5 rounded-2xl shadow-xl space-y-3 animate-fadeIn">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="w-5 h-5 text-teal-400" />
+              <h3 className="font-bold text-sm text-slate-100">Search Audit & Duplicate Prevention Summary</h3>
+              <span className="text-[11px] font-mono text-slate-400">({searchAuditSummary.verificationDate})</span>
+            </div>
+            <div className="text-xs text-teal-400 font-semibold bg-teal-950/60 border border-teal-800/60 px-2.5 py-0.5 rounded-lg">
+              Mode: {verificationMode}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+            <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+              <div className="text-[10px] text-slate-400 uppercase font-medium">Companies Discovered</div>
+              <div className="text-lg font-bold font-mono text-slate-100">{searchAuditSummary.companiesFound}</div>
+            </div>
+            <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+              <div className="text-[10px] text-emerald-400 uppercase font-medium">New Unique Leads</div>
+              <div className="text-lg font-bold font-mono text-emerald-300">+{searchAuditSummary.newUniqueLeads}</div>
+            </div>
+            <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+              <div className="text-[10px] text-amber-400 uppercase font-medium">Duplicates Merged</div>
+              <div className="text-lg font-bold font-mono text-amber-300">{searchAuditSummary.existingDuplicates}</div>
+            </div>
+            <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+              <div className="text-[10px] text-rose-400 uppercase font-medium">Rejected / Below Criteria</div>
+              <div className="text-lg font-bold font-mono text-rose-300">{searchAuditSummary.rejectedLeads}</div>
+            </div>
+            <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
+              <div className="text-[10px] text-teal-400 uppercase font-medium">Avg Lead Score</div>
+              <div className="text-lg font-bold font-mono text-teal-300">{searchAuditSummary.averageLeadScore}/100</div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 pt-1 border-t border-slate-800/80">
+            <div>
+              Verified Leads: <strong className="text-emerald-400">{searchAuditSummary.verifiedLeads}</strong> · 
+              Potential Leads: <strong className="text-amber-400">{searchAuditSummary.potentialLeads}</strong> · 
+              Emails Verified: <strong className="text-teal-400">{searchAuditSummary.emailsVerified}</strong> · 
+              Unverified: <strong className="text-slate-400">{searchAuditSummary.emailsUnverified}</strong>
+            </div>
+            <div className="text-[11px] text-slate-500">
+              All unique records saved permanently to Lead Intelligence Database
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Loading Spinner */}
       {loading && (

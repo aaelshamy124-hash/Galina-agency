@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   Globe, Layers, Users, Award, ShieldAlert, Bot, Mail, FileText, 
-  Settings, LogOut, MessageCircle, RefreshCw, Sparkles, Shield, Anchor
+  Settings, LogOut, MessageCircle, RefreshCw, Sparkles, Shield, Anchor, ShieldCheck
 } from "lucide-react";
 
 import { Product, Country, ProspectBuyer, Supplier, EmailLog } from "./types";
@@ -14,6 +14,7 @@ import Dashboard from "./components/Dashboard";
 import Products from "./components/Products";
 import Countries from "./components/Countries";
 import MarketFinder from "./components/MarketFinder";
+import LeadIntelligenceDatabase from "./components/LeadIntelligenceDatabase";
 import CRMPipeline from "./components/CRMPipeline";
 import Suppliers from "./components/Suppliers";
 import CompetitorsExhibitions from "./components/CompetitorsExhibitions";
@@ -104,6 +105,40 @@ export default function App() {
     });
   };
 
+  const handleAddLeadToCRM = (lead: any) => {
+    const prospect: ProspectBuyer = {
+      id: lead.lead_id,
+      name: lead.company_name,
+      country: lead.country,
+      city: lead.city,
+      website: lead.official_website,
+      email: lead.email,
+      phone: lead.phone,
+      linkedIn: lead.linkedin_company_url || "",
+      purchasingManager: lead.contact_person,
+      procurementRole: lead.contact_job_title,
+      importerType: lead.business_type,
+      companySize: "Large",
+      employees: 250,
+      yearsInBusiness: 15,
+      importsFromEgypt: true,
+      importsFromTurkey: false,
+      importsFromChina: false,
+      importsFromIndia: false,
+      competitiveOpportunity: lead.reason_for_buyer_relevance,
+      aiScore: lead.lead_quality_score,
+      status: "New Lead",
+      emailsSentCount: 0,
+      requiredCrops: lead.product_categories || [lead.product_category],
+      emailVerificationStatus: lead.email_verification_status === "VERIFIED" ? "VERIFIED – OFFICIAL COMPANY SOURCE" : "NOT VERIFIED",
+      emailVerificationSource: lead.email_verification_reason,
+      emailVerificationDate: lead.verification_date,
+      source_evidence: lead.source_evidence,
+      source_urls: lead.source_urls
+    };
+    handleAddProspect(prospect);
+  };
+
   const handleUpdateBuyerStatus = (id: string, status: ProspectBuyer["status"]) => {
     setBuyers(prev => prev.map(b => b.id === id ? { 
       ...b, 
@@ -168,6 +203,7 @@ export default function App() {
     { id: "products", label: t("tabProducts"), icon: Layers, roles: ["Export Director", "Sales Executive", "CEO"] },
     { id: "countries", label: t("tabCountries"), icon: Anchor, roles: ["Export Director", "Sales Executive", "CEO"] },
     { id: "finder", label: t("tabFinder"), icon: Sparkles, roles: ["Export Director", "CEO"] },
+    { id: "lead_db", label: t("tabLeadDatabase"), icon: ShieldCheck, roles: ["Export Director", "Sales Executive", "CEO"] },
     { id: "crm", label: t("tabCRM"), icon: Users, roles: ["Export Director", "Sales Executive", "CEO"] },
     { id: "suppliers", label: t("tabSuppliers"), icon: Shield, roles: ["Export Director", "CEO"] },
     { id: "competitors", label: t("tabCompetitors"), icon: ShieldAlert, roles: ["Export Director", "CEO"] },
@@ -317,6 +353,10 @@ export default function App() {
               countries={countries} 
               onAddProspect={handleAddProspect} 
             />
+          )}
+
+          {activeTab === "lead_db" && (
+            <LeadIntelligenceDatabase onSelectLeadForCRM={handleAddLeadToCRM} />
           )}
 
           {activeTab === "crm" && (
