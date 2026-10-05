@@ -7,6 +7,7 @@ import {
   PieChart, Pie, Cell, Legend
 } from "recharts";
 import { Product, Country, ProspectBuyer } from "../types";
+import { leadDatabase } from "../services/leadDatabase";
 
 interface DashboardProps {
   products: Product[];
@@ -57,9 +58,24 @@ export default function Dashboard({ products, countries, buyers, setActiveTab, s
           <h1 className="text-2xl font-semibold tracking-tight font-display text-slate-900">Export Control Center</h1>
           <p className="text-sm text-slate-500 mt-1">Real-time B2B intelligence, pipeline flow, and target markets for Galina IQF.</p>
         </div>
-        <div className="mt-4 md:mt-0 flex items-center gap-2 bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-lg text-xs font-medium border border-emerald-100">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Galina Cloud Service: Active (Alexandria Node)
+        <div className="mt-4 md:mt-0 flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-1.5 text-xs text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-xs">
+            <span className="text-emerald-700 font-bold">✓ VERIFIED</span>
+            <span aria-hidden="true" className="text-slate-300">·</span>
+            <span className="text-slate-500">Official Domain:</span>
+            <a 
+              href={`https://${leadDatabase.getSettings().official_company_domain}`}
+              target="_blank" 
+              rel="noreferrer"
+              className="text-teal-700 hover:text-teal-900 font-mono font-bold underline"
+            >
+              {leadDatabase.getSettings().official_company_domain}
+            </a>
+          </div>
+          <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-lg text-xs font-medium border border-emerald-100">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Galina Cloud Service: Active (Alexandria Node)
+          </div>
         </div>
       </div>
 

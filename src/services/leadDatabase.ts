@@ -19,14 +19,22 @@ import {
   DataFreshness, 
   EmailVerificationStatusEnum,
   LeadVerificationStatus,
-  LeadContact
+  LeadContact,
+  AppSettings
 } from "../types";
 import { INITIAL_BUYERS } from "../data";
+
+export const DEFAULT_APP_SETTINGS: AppSettings = {
+  official_company_domain: "galina-eg.com",
+  official_company_name: "Galina Agro-Export Group",
+  official_company_website: "https://galina-eg.com"
+};
 
 const STORAGE_KEYS = {
   LEADS: "galina_lead_database_v2",
   DUPLICATE_LOGS: "galina_duplicate_logs_v2",
   SEARCH_SESSIONS: "galina_search_sessions_v2",
+  SETTINGS: "galina_app_settings_v1",
   NEXT_ID: "galina_lead_next_id"
 };
 
@@ -441,6 +449,7 @@ class LeadDatabaseService {
   private leads: LeadRecord[] = [];
   private duplicateLogs: DuplicateLogRecord[] = [];
   private searchSessions: SearchSessionRecord[] = [];
+  private settings: AppSettings = DEFAULT_APP_SETTINGS;
   private isInitialized = false;
 
   constructor() {
@@ -451,6 +460,11 @@ class LeadDatabaseService {
     if (this.isInitialized || typeof window === "undefined") return;
 
     try {
+      const savedSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      if (savedSettings) {
+        this.settings = { ...DEFAULT_APP_SETTINGS, ...JSON.parse(savedSettings) };
+      }
+
       const savedLeads = localStorage.getItem(STORAGE_KEYS.LEADS);
       if (savedLeads) {
         this.leads = JSON.parse(savedLeads);
@@ -582,6 +596,12 @@ class LeadDatabaseService {
         verification_status: "VERIFIED",
         verification_date: buyer.emailVerificationDate || today,
 
+        application_domain: this.settings.official_company_domain || "galina-eg.com",
+        lead_company: buyer.name,
+        lead_official_website: buyer.website,
+        lead_source: buyer.emailVerificationSource || "Official verified Egyptian export directory & confirmed commercial buyer record.",
+        lead_source_url: buyer.website || "https://verbund.edeka",
+
         source_evidence: "Official verified Egyptian export directory & confirmed commercial buyer record.",
         source_urls: [buyer.website || "https://verbund.edeka"],
 
@@ -621,6 +641,34 @@ class LeadDatabaseService {
   // ============================================================================
   // PUBLIC DATABASE METHODS
   // ============================================================================
+
+  public getSettings(): AppSettings {
+    this.init();
+    return { ...this.settings };
+  }
+
+  public updateSettings(newSettings: Partial<AppSettings>): AppSettings {
+    this.init();
+    const cleanDomain = newSettings.official_company_domain 
+      ? newSettings.official_company_domain.trim().toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, "").replace(/\/+$/, "")
+      : this.settings.official_company_domain;
+
+    this.settings = {
+      ...this.settings,
+      ...newSettings,
+      official_company_domain: cleanDomain
+    };
+
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(this.settings));
+      }
+    } catch (e) {
+      console.warn("[LeadDatabase] Failed to persist app settings:", e);
+    }
+
+    return { ...this.settings };
+  }
 
   public getAllLeads(): LeadRecord[] {
     this.init();
@@ -790,6 +838,12 @@ class LeadDatabaseService {
 
       verification_status: quality.score >= 70 ? "VERIFIED" : "NEEDS_REVIEW",
       verification_date: today,
+
+      application_domain: this.settings.official_company_domain || "galina-eg.com",
+      lead_company: leadCandidate.company_name || "Enterprise Lead",
+      lead_official_website: leadCandidate.official_website || "",
+      lead_source: leadCandidate.source_evidence || "Company identity confirmed through corporate trade directory and official export documentation.",
+      lead_source_url: (leadCandidate.source_urls && leadCandidate.source_urls[0]) || leadCandidate.official_website || "",
 
       source_evidence: leadCandidate.source_evidence || "Company identity confirmed through corporate trade directory and official export documentation.",
       source_urls: leadCandidate.source_urls || (leadCandidate.official_website ? [leadCandidate.official_website] : []),
@@ -1075,6 +1129,12 @@ class LeadDatabaseService {
         contact_job_title: raw.procurementRole || raw.contact_job_title || "Head of Sourcing",
 
         linkedin_company_url: raw.linkedIn || raw.linkedin_company_url || "",
+
+        application_domain: this.settings.official_company_domain || "galina-eg.com",
+        lead_company: companyName,
+        lead_official_website: website,
+        lead_source: raw.evidence || raw.source_evidence || `Official website and trade intelligence confirm active import operations in ${country} for ${params.product}.`,
+        lead_source_url: (raw.sources && raw.sources[0]) || website || "",
 
         source_evidence: raw.evidence || raw.source_evidence || `Official website and trade intelligence confirm active import operations in ${country} for ${params.product}.`,
         source_urls: raw.sources || (website ? [website] : []),

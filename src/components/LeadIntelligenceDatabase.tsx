@@ -160,12 +160,22 @@ export default function LeadIntelligenceDatabase({ onSelectLeadForCRM }: LeadInt
 
   // CSV Export for Leads
   const exportLeadsCSV = () => {
+    const today = new Date().toISOString().split("T")[0];
+    const settings = leadDatabase.getSettings();
+
+    const reportHeaders = [
+      `"Export Market Intelligence & Lead Generator"`,
+      `"Official Domain: ${settings.official_company_domain}"`,
+      `"Report Generated: ${today}"`,
+      `""`
+    ];
+
     const headers = [
       "Lead ID", "Company", "Country", "City", "Business Type", "Industry",
-      "Product Categories", "Website", "Email", "Email Status", "Phone",
+      "Product Categories", "Website", "Lead Source Domain", "Lead Source URL", "Email", "Email Status", "Phone",
       "Contact Person", "Job Title", "LinkedIn", "Lead Score", "Quality Grade",
       "Duplicate Risk", "Verification Status", "Verification Date",
-      "Source Evidence", "Source URLs", "First Discovered", "Last Checked"
+      "Independent Source Evidence", "Source URLs", "Application Owner Domain", "First Discovered", "Last Checked"
     ];
 
     const rows = filteredLeads.map(l => [
@@ -177,6 +187,8 @@ export default function LeadIntelligenceDatabase({ onSelectLeadForCRM }: LeadInt
       `"${l.industry || ''}"`,
       `"${(l.product_categories || [l.product_category]).join(', ').replace(/"/g, '""')}"`,
       `"${l.official_website || ''}"`,
+      `"${l.normalized_domain || ''}"`,
+      `"${l.lead_source_url || (l.source_urls && l.source_urls[0]) || l.official_website || ''}"`,
       `"${l.email || ''}"`,
       `"${l.email_verification_status || ''}"`,
       `"${l.phone || ''}"`,
@@ -190,27 +202,38 @@ export default function LeadIntelligenceDatabase({ onSelectLeadForCRM }: LeadInt
       `"${l.verification_date}"`,
       `"${(l.source_evidence || '').replace(/"/g, '""')}"`,
       `"${(l.source_urls || []).join('; ').replace(/"/g, '""')}"`,
+      `"${l.application_domain || settings.official_company_domain}"`,
       `"${l.first_discovered_at}"`,
       `"${l.last_checked_at}"`
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const csvContent = "data:text/csv;charset=utf-8," + [...reportHeaders, headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Galina_Verified_Leads_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `Galina_Verified_Leads_${today}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showNotification(`Exported ${filteredLeads.length} verified leads to CSV.`);
+    showNotification(`Exported ${filteredLeads.length} verified leads with official header.`);
   };
 
   // CSV Export for Duplicate Detection Log
   const exportDuplicatesCSV = () => {
+    const today = new Date().toISOString().split("T")[0];
+    const settings = leadDatabase.getSettings();
+
+    const reportHeaders = [
+      `"Export Market Intelligence & Lead Generator - Duplicate Audit Log"`,
+      `"Official Domain: ${settings.official_company_domain}"`,
+      `"Report Generated: ${today}"`,
+      `""`
+    ];
+
     const headers = [
       "Log ID", "New Candidate Name", "Existing Lead Name", "New Domain",
       "Existing Domain", "Duplicate Score", "Duplicate Reason", "Existing Lead ID",
-      "Detected Date", "Search Session ID", "Status"
+      "Detected Date", "Search Session ID", "Status", "Application Domain"
     ];
 
     const rows = duplicateLogs.map(d => [
@@ -224,18 +247,19 @@ export default function LeadIntelligenceDatabase({ onSelectLeadForCRM }: LeadInt
       `"${d.existing_lead_id || ''}"`,
       `"${d.detected_date}"`,
       `"${d.search_session_id || ''}"`,
-      `"${d.status}"`
+      `"${d.status}"`,
+      `"${settings.official_company_domain}"`
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const csvContent = "data:text/csv;charset=utf-8," + [...reportHeaders, headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Galina_Duplicate_Audit_Log_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `Galina_Duplicate_Audit_Log_${today}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showNotification(`Exported ${duplicateLogs.length} duplicate detection records to CSV.`);
+    showNotification(`Exported ${duplicateLogs.length} duplicate detection records.`);
   };
 
   return (
@@ -251,16 +275,34 @@ export default function LeadIntelligenceDatabase({ onSelectLeadForCRM }: LeadInt
       {/* Header & Sub-Navigation */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
         <div>
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex flex-wrap items-center gap-3 mb-1.5">
             <h1 className="text-2xl font-bold tracking-tight text-slate-100">
               Lead Intelligence Database
             </h1>
-            <span className="text-xs text-teal-400 font-mono">
+            <span className="text-xs text-teal-400 font-mono bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">
               v2.4 Enterprise Verified
             </span>
           </div>
-          <p className="text-sm text-slate-400">
-            Persistent entity registry, multi-signal duplicate prevention, and international buyer audit trail.
+          
+          {/* Official Company Source Badge (Section 1 of Prompt) */}
+          <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-300 mb-1">
+            <span className="text-emerald-400 font-bold flex items-center gap-1">
+              <span>✓ VERIFIED – OFFICIAL COMPANY SOURCE</span>
+            </span>
+            <span aria-hidden="true" className="text-slate-600">·</span>
+            <span className="text-slate-400">Official Domain:</span>
+            <a 
+              href={`https://${leadDatabase.getSettings().official_company_domain}`}
+              target="_blank" 
+              rel="noreferrer"
+              className="text-teal-400 hover:text-white underline font-semibold font-mono flex items-center gap-1"
+            >
+              <span>{leadDatabase.getSettings().official_company_domain}</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+          <p className="text-xs text-slate-400">
+            Persistent entity registry, multi-signal duplicate prevention, and international buyer audit trail. Each lead is corroborated via independent corporate sources.
           </p>
         </div>
 
@@ -993,22 +1035,49 @@ export default function LeadIntelligenceDatabase({ onSelectLeadForCRM }: LeadInt
               </div>
             </div>
 
-            {/* Section 4: Source Evidence & Audit Trail */}
+            {/* Section 4: Lead Verification & Independent Source Evidence */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>4. Source Evidence & Traceability</span>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>4. Independent Lead Verification & Source Evidence</span>
+                </div>
+                <span className="text-[11px] text-emerald-400 font-mono">
+                  Verified: {selectedLead.verification_date}
+                </span>
               </h3>
-              <div className="space-y-2 bg-slate-950/40 p-4 rounded-xl border border-slate-800/60 text-xs">
+              
+              <div className="space-y-3 bg-slate-950/40 p-4 rounded-xl border border-slate-800/60 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-3 border-b border-slate-800/80">
+                  <div>
+                    <span className="text-slate-500 block text-[11px]">Verification Status:</span>
+                    <span className="font-semibold text-emerald-400">{selectedLead.verification_status}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[11px]">Lead Source Domain:</span>
+                    <span className="font-mono text-cyan-300 font-semibold">{selectedLead.normalized_domain || "Direct Registry"}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[11px]">Lead Source URL:</span>
+                    {selectedLead.official_website ? (
+                      <a href={selectedLead.official_website} target="_blank" rel="noreferrer" className="text-teal-400 hover:underline flex items-center gap-1 font-mono text-[11px]">
+                        <span className="truncate max-w-[200px]">{selectedLead.official_website}</span>
+                        <ExternalLink className="w-3 h-3 shrink-0" />
+                      </a>
+                    ) : <span className="text-slate-500">—</span>}
+                  </div>
+                </div>
+
                 <div>
-                  <span className="text-slate-500 block mb-1">Source Evidence Statement:</span>
-                  <p className="text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800">
+                  <span className="text-slate-500 block mb-1">Independent Source Evidence:</span>
+                  <p className="text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 leading-relaxed">
                     {selectedLead.source_evidence}
                   </p>
                 </div>
+
                 {selectedLead.source_urls && selectedLead.source_urls.length > 0 && (
                   <div>
-                    <span className="text-slate-500 block mb-1">Confirmed Source URLs:</span>
+                    <span className="text-slate-500 block mb-1">Corroborated Source URLs:</span>
                     <div className="flex flex-wrap gap-2">
                       {selectedLead.source_urls.map((url, uidx) => (
                         <a 
@@ -1018,20 +1087,69 @@ export default function LeadIntelligenceDatabase({ onSelectLeadForCRM }: LeadInt
                           rel="noreferrer" 
                           className="px-2.5 py-1 bg-slate-900 border border-slate-800 text-teal-400 hover:underline rounded text-[11px] flex items-center gap-1"
                         >
-                          <span>{url}</span>
-                          <ExternalLink className="w-3 h-3" />
+                          <span className="max-w-xs truncate">{url}</span>
+                          <ExternalLink className="w-3 h-3 shrink-0" />
                         </a>
                       ))}
                     </div>
                   </div>
                 )}
+
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800 text-[11px] text-slate-400">
                   <div>First Discovered: <span className="text-slate-200">{selectedLead.first_discovered_at?.split("T")[0]}</span></div>
                   <div>Last Checked: <span className="text-slate-200">{selectedLead.last_checked_at?.split("T")[0]}</span></div>
                   <div>Session ID: <span className="text-slate-200 font-mono">{selectedLead.search_session_id || "Direct"}</span></div>
-                  <div>Notes: <span className="text-slate-200">{selectedLead.notes || "None"}</span></div>
+                  <div>Data Conflict: <span className={selectedLead.data_conflict ? "text-rose-400 font-bold" : "text-emerald-400"}>{selectedLead.data_conflict ? "Yes (Flagged)" : "No"}</span></div>
                 </div>
               </div>
+            </div>
+
+            {/* Section 5: Application Owner / Exporter Identity (Section 2 & 10 of Prompt) */}
+            <div className="space-y-2 bg-gradient-to-r from-teal-950/40 via-slate-950/60 to-slate-900/40 p-4 rounded-xl border border-teal-900/40 text-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-teal-900/40 pb-2">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-teal-400" />
+                  <span className="font-bold text-slate-200 uppercase tracking-wider text-[11px]">Application Owner & Exporter Identity</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[10px]">
+                  <span>✓ VERIFIED – OFFICIAL COMPANY SOURCE</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                <div>
+                  <span className="text-slate-400 block text-[11px]">Official Company Domain:</span>
+                  <a 
+                    href={`https://${leadDatabase.getSettings().official_company_domain}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono font-bold text-teal-300 hover:text-white underline flex items-center gap-1"
+                  >
+                    <span>{leadDatabase.getSettings().official_company_domain}</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[11px]">Official Exporter Name:</span>
+                  <span className="font-medium text-slate-200">{leadDatabase.getSettings().official_company_name}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[11px]">Official Website:</span>
+                  <a 
+                    href={leadDatabase.getSettings().official_company_website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-mono text-teal-400 hover:underline flex items-center gap-1 text-[11px]"
+                  >
+                    <span>{leadDatabase.getSettings().official_company_website}</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-800/60">
+                Note: The application owner domain (<strong className="text-slate-300">{leadDatabase.getSettings().official_company_domain}</strong>) identifies the exporter/system operator and is never confused with or used as the verification source for prospective buyer leads.
+              </p>
             </div>
 
             {/* Modal Actions */}

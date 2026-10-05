@@ -44,18 +44,26 @@ export default function Reports({ products, countries, buyers, suppliers }: Repo
       <div ref={printAreaRef} className="bg-white p-8 rounded-xl border border-slate-200 shadow-xs max-w-4xl mx-auto space-y-8 font-sans text-slate-800">
         
         {/* Report Corporate Letterhead Header */}
-        <div className="flex items-start justify-between border-b-2 border-teal-800 pb-6">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight text-teal-900 font-display">GALINA GLOBAL EXPORT CO.</h2>
-            <p className="text-xs uppercase tracking-wider font-semibold text-slate-400">Headquarters: Alexandria & Beheira Processing Nodes, Egypt</p>
-            <p className="text-[10px] text-slate-400">ISO 22000 | BRCGS AA | FDA Registered | Halal Certified Sourcing</p>
+        <div className="flex flex-col sm:flex-row items-start justify-between border-b-2 border-teal-800 pb-6 gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] bg-teal-900 text-teal-100 font-bold px-2 py-0.5 rounded">
+                ✓ VERIFIED – OFFICIAL COMPANY SOURCE
+              </span>
+              <span className="text-xs text-slate-500 font-mono">
+                Official Domain: <a href="https://galina-eg.com" target="_blank" rel="noreferrer" className="text-teal-700 underline font-bold">galina-eg.com</a>
+              </span>
+            </div>
+            <h2 className="text-2xl font-bold tracking-tight text-teal-900 font-display">Export Market Intelligence &amp; Lead Generator</h2>
+            <p className="text-xs uppercase tracking-wider font-semibold text-slate-500">Galina Agro-Export Group · Alexandria &amp; Beheira Processing Hubs, Egypt</p>
+            <p className="text-[10px] text-slate-400">Official Portal: https://galina-eg.com · BRCGS Grade AA · IFS Food v8 · FDA FSVP Compliant</p>
           </div>
-          <div className="text-right">
+          <div className="sm:text-right shrink-0">
             <span className="bg-teal-50 text-teal-800 border border-teal-200 px-3 py-1 rounded-lg text-xs font-bold uppercase">
-              Export Audit report
+              Official Technical Dossier
             </span>
-            <p className="text-xs text-slate-400 mt-2">Date: {new Date().toLocaleDateString("en-US", { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-            <p className="text-[10px] text-slate-400">Ref: GEX-2026-IQF07</p>
+            <p className="text-xs text-slate-600 font-medium mt-2">Report Generated: {new Date().toISOString().split("T")[0]}</p>
+            <p className="text-[10px] text-slate-400 font-mono">Ref: GEX-2026-INTEL-01</p>
           </div>
         </div>
 

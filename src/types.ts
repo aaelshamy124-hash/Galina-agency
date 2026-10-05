@@ -165,6 +165,15 @@ export interface LeadRecord {
   verification_status: LeadVerificationStatus;
   verification_date: string; // YYYY-MM-DD
 
+  // Exporter / Application Owner Identity (Never confused with lead verification sources)
+  application_domain: string; // Always "galina-eg.com" by default
+
+  // Lead-specific source traceability (Independent from application owner)
+  lead_company?: string;
+  lead_official_website?: string;
+  lead_source?: string;
+  lead_source_url?: string;
+
   source_evidence: string;
   source_urls: string[];
 
@@ -274,4 +283,10 @@ export interface MessageLog {
   platform: "WhatsApp" | "Email";
   content: string;
   sentAt: string;
+}
+
+export interface AppSettings {
+  official_company_domain: string; // default: "galina-eg.com"
+  official_company_name: string;   // default: "Galina Agro-Export Group"
+  official_company_website: string;// default: "https://galina-eg.com"
 }

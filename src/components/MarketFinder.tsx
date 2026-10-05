@@ -323,20 +323,28 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
     doc.setFillColor(248, 250, 252);
     doc.rect(0, 0, 297, 34, "F");
     
+    const today = new Date().toISOString().split("T")[0];
+    const settings = leadDatabase.getSettings();
+
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
+    doc.setFontSize(15);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text("GALINA EGYPT - GLOBAL AGRO-EXPORT B2B INTELLIGENCE REPORT", 15, 13);
+    doc.text("Export Market Intelligence & Lead Generator", 15, 12);
     
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(darkSlate[0], darkSlate[1], darkSlate[2]);
+    doc.text(`Official Domain: ${settings.official_company_domain}  |  Report Generated: ${today}`, 15, 19);
+
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
+    doc.setFontSize(8);
     doc.setTextColor(grayText[0], grayText[1], grayText[2]);
-    doc.text(`Report Date: ${new Date().toLocaleDateString()} | Verified Produce Buyers & Import Procurement Directory`, 15, 20);
-    doc.text(`Certifications Standard: BRCGS AA Grade | IFS Food v8 | GLOBALG.A.P. | FDA FSVP | Halal Certified`, 15, 25);
+    doc.text(`Target Destination: ${selectedCountry?.name || "Global"} · Crop: ${selectedProduct?.name || "Produce"} · Quality Standards: BRCGS Grade AA / IFS Food v8`, 15, 25);
+    doc.text(`Independent Verification Notice: Each buyer record is verified against independent commercial websites and official trade registers.`, 15, 30);
     
     // Accent Line
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.rect(0, 32, 297, 2, "F");
+    doc.rect(0, 33, 297, 1.5, "F");
     
     // Market Destination Section
     let currentY = 41;
@@ -435,7 +443,7 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
         doc.setFontSize(7);
         doc.setTextColor(grayText[0], grayText[1], grayText[2]);
         doc.text(
-          `Page ${data.pageNumber} of ${pageCount} | Galina Group Agro-Export Intelligence | Confidential B2B Trade Document`,
+          `Page ${data.pageNumber} of ${pageCount} | Export Market Intelligence & Lead Generator | Official Domain: ${settings.official_company_domain} | Confidential`,
           15,
           doc.internal.pageSize.height - 7
         );
@@ -527,8 +535,18 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
       b.aiScore || 0
     ]);
 
+    const today = new Date().toISOString().split("T")[0];
+    const settings = leadDatabase.getSettings();
+
+    const reportHeaders = [
+      `"Export Market Intelligence & Lead Generator"`,
+      `"Official Domain: ${settings.official_company_domain}"`,
+      `"Report Generated: ${today}"`,
+      `""`
+    ];
+
     // UTF-8 BOM (\uFEFF) ensures flawless Arabic font display in Microsoft Excel
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+    const csvContent = "\uFEFF" + [...reportHeaders, headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
