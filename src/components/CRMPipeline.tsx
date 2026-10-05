@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { 
   Building2, MapPin, Mail, Phone, ExternalLink, Calendar, Edit3, 
-  Trash2, MailWarning, MessageCircle, CheckCircle, HelpCircle, Save, Globe
+  Trash2, MailWarning, MessageCircle, CheckCircle, HelpCircle, Save, Globe, Search
 } from "lucide-react";
 import { ProspectBuyer } from "../types";
 import { useLanguage } from "../context/LanguageContext";
+import { searchBuyersAdvanced } from "../services/customerSearch";
 
 interface CRMPipelineProps {
   buyers: ProspectBuyer[];
@@ -17,10 +18,11 @@ interface CRMPipelineProps {
 export default function CRMPipeline({ 
   buyers, onUpdateBuyerStatus, onUpdateBuyerNotes, onDeleteBuyer, onSelectBuyerForEmail 
 }: CRMPipelineProps) {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const statuses: ProspectBuyer["status"][] = [
     "New Lead", "Contacted", "Negotiation", "Quotation", "Sample Sent", "Won", "Lost"
@@ -48,16 +50,40 @@ export default function CRMPipeline({
     }
   };
 
-  const filteredBuyers = filterStatus === "All" 
-    ? buyers 
-    : buyers.filter(b => b.status === filterStatus);
+  const searchedBuyers = useMemo(() => {
+    return searchBuyersAdvanced(buyers, searchQuery);
+  }, [buyers, searchQuery]);
+
+  const filteredBuyers = useMemo(() => {
+    return filterStatus === "All" 
+      ? searchedBuyers 
+      : searchedBuyers.filter(b => b.status === filterStatus);
+  }, [searchedBuyers, filterStatus]);
 
   return (
     <div className="space-y-6" id="crm-tab">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-4 gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight font-display text-slate-900">B2B CRM Pipeline</h1>
-          <p className="text-sm text-slate-500 mt-1">Track import negotiations, sample quality tests, and export delivery states.</p>
+          <h1 className="text-2xl font-semibold tracking-tight font-display text-slate-900">
+            {lang === "ar" ? "خط أنابيب إدارة العملاء (CRM Pipeline)" : "B2B CRM Pipeline"}
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            {lang === "ar" 
+              ? "متابعة مراحل المفاوضات، إرسال العينات، وتحديثات عقود التصدير." 
+              : "Track import negotiations, sample quality tests, and export delivery states."}
+          </p>
+        </div>
+
+        {/* CRM Search Input */}
+        <div className="relative w-full md:w-72">
+          <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+          <input 
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder={lang === "ar" ? "بحث في العملاء والمفاوضات..." : "Search CRM clients, countries..."}
+            className="w-full text-xs pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:border-teal-500 bg-white"
+          />
         </div>
       </div>
 
@@ -69,7 +95,7 @@ export default function CRMPipeline({
             filterStatus === "All" ? "bg-white text-teal-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
           }`}
         >
-          All ({buyers.length})
+          {lang === "ar" ? "الكل" : "All"} ({searchedBuyers.length})
         </button>
         {statuses.map(st => (
           <button
@@ -79,7 +105,7 @@ export default function CRMPipeline({
               filterStatus === st ? "bg-white text-teal-800 shadow-xs" : "text-slate-500 hover:text-slate-700"
             }`}
           >
-            {st} ({buyers.filter(b => b.status === st).length})
+            {st} ({searchedBuyers.filter(b => b.status === st).length})
           </button>
         ))}
       </div>

@@ -8,16 +8,68 @@
     <meta property="og:title" content="Galina Export Advisor AI" />
     <meta property="og:description" content="Rapid international client verification with live source checks, official websites, procurement contacts, and B2B produce export intelligence." />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230d9488'><circle cx='12' cy='12' r='10'/></svg>" />
+    
+    <!-- Intelligent Base Path Detection & Error Guard for GitHub Pages & Static Hosts -->
     <script>
-      // 1. Ensure trailing slash for GitHub Pages repo path so relative assets resolve correctly
       (function() {
-        var l = window.location;
-        if (l.hostname.endsWith('github.io')) {
-          var p = l.pathname;
-          if (!p.endsWith('/') && !p.split('/').pop().includes('.')) {
-            l.replace(p + '/' + l.search + l.hash);
-          }
+        var loc = window.location;
+        var isDev = loc.port === '3000' || 
+                    loc.hostname === 'localhost' || 
+                    loc.hostname === '127.0.0.1' || 
+                    loc.hostname.includes('run.app');
+        window.__IS_DEV_SERVER__ = isDev;
+
+        // 1. Automatic trailing-slash normalization for GitHub Pages / subfolder hosting
+        var path = loc.pathname;
+        if (!isDev && !path.endsWith('/') && !path.split('/').pop().includes('.')) {
+          loc.replace(path + '/' + loc.search + loc.hash);
+          return;
         }
+
+        // 2. Compute canonical base directory URL
+        var baseDir = path.substring(0, path.lastIndexOf('/') + 1);
+        if (!baseDir) baseDir = '/';
+        window.__APP_BASE_URL__ = loc.origin + baseDir;
+
+        // 3. Inject <base> tag to guarantee all relative asset requests resolve correctly
+        if (!isDev) {
+          var baseTag = document.createElement('base');
+          baseTag.href = window.__APP_BASE_URL__;
+          document.head.appendChild(baseTag);
+        }
+
+        // 4. Capture-phase error listener to catch missing bundles or syntax issues
+        window.addEventListener('error', function(e) {
+          console.warn("[AppLoader] Resource or execution error:", e);
+          if (!window.__APP_MOUNTED__) {
+            var detail = e.message || (e.target && e.target.src) || (e.target && e.target.href) || "Resource loading failed";
+            showErrorUI("Could not load application assets. " + detail);
+          }
+        }, true);
+
+        // 5. Timeout guard: if React has not mounted within 6 seconds, show interactive retry interface
+        setTimeout(function() {
+          if (!window.__APP_MOUNTED__) {
+            showErrorUI("Application initialization is taking longer than expected. You can reload or clear the session cache.");
+          }
+        }, 6000);
+
+        function showErrorUI(msg) {
+          var loader = document.querySelector('.initial-loader');
+          if (!loader || window.__APP_MOUNTED__) return;
+          loader.innerHTML = [
+            '<div style="max-width:28rem;margin:1.5rem;padding:2rem;background:#1e293b;border:1px solid #334155;border-radius:1rem;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);font-family:system-ui,sans-serif;color:#f8fafc;">',
+              '<div style="width:48px;height:48px;background:rgba(13,148,136,0.2);color:#2dd4bf;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:1.5rem;font-weight:bold;">⚡</div>',
+              '<h2 style="font-size:1.25rem;font-weight:700;color:#f1f5f9;margin-bottom:0.5rem;">Galina Export Advisor AI</h2>',
+              '<p style="font-size:0.875rem;color:#94a3b8;margin-bottom:1.5rem;line-height:1.5;">' + msg + '</p>',
+              '<div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">',
+                '<button onclick="window.location.reload(true)" style="background:#0d9488;color:#ffffff;border:none;padding:0.65rem 1.5rem;border-radius:0.5rem;font-weight:600;font-size:0.875rem;cursor:pointer;">Reload Application</button>',
+                '<button onclick="try{localStorage.clear();window.location.reload(true);}catch(e){}" style="background:#334155;color:#f1f5f9;border:1px solid #475569;padding:0.65rem 1.25rem;border-radius:0.5rem;font-weight:600;font-size:0.875rem;cursor:pointer;">Reset Cache & Reload</button>',
+              '</div>',
+            '</div>'
+          ].join('');
+        }
+        window.__showAppErrorUI__ = showErrorUI;
       })();
     </script>
     <script type="module" crossorigin src="./assets/app.js"></script>
@@ -43,47 +95,31 @@
     <!-- Static Hosting Bootstrapper (Activates on GitHub Pages / Direct Static Hosting) -->
     <script>
       (function() {
-        var isDevServer = window.location.port === '3000' || 
-                          window.location.hostname === 'localhost' || 
-                          window.location.hostname === '127.0.0.1' || 
-                          window.location.hostname.includes('run.app');
+        if (window.__IS_DEV_SERVER__) return;
 
         // On static hosting (like GitHub Pages branch deployment):
         // Browsers cannot run TypeScript /src/main.tsx directly.
         // If Vite's bundle script was not injected into HTML, load pre-compiled bundle!
-        if (!isDevServer) {
-          // Check if Vite's production script tag is already in DOM (e.g. in dist/index.html)
-          var hasProdBundle = !!document.querySelector('script[src*="assets/app.js"]');
-          if (!hasProdBundle) {
-            // 1. Inject production CSS
-            var link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = './assets/main.css';
-            document.head.appendChild(link);
+        var hasProdBundle = !!document.querySelector('script[src*="assets/app.js"]');
+        if (!hasProdBundle) {
+          var base = window.__APP_BASE_URL__ || './';
 
-            var linkFallback = document.createElement('link');
-            linkFallback.rel = 'stylesheet';
-            linkFallback.href = './assets/index.css';
-            document.head.appendChild(linkFallback);
+          // 1. Inject production CSS
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = base + 'assets/index.css';
+          document.head.appendChild(link);
 
-            // 2. Inject production JS
-            var script = document.createElement('script');
-            script.type = 'module';
-            script.crossOrigin = 'anonymous';
-            script.src = './assets/app.js';
-            script.onerror = function() {
-              var loader = document.querySelector('.initial-loader');
-              if (loader) {
-                loader.innerHTML = '<div style="max-width:28rem;padding:2rem;background:#1e293b;border:1px solid #334155;border-radius:1rem;text-align:center;">' +
-                  '<div style="font-size:2rem;margin-bottom:0.75rem;">⚠️</div>' +
-                  '<h2 style="font-size:1.2rem;font-weight:bold;color:#f1f5f9;margin-bottom:0.5rem;">Assets Loading Notice</h2>' +
-                  '<p style="font-size:0.8rem;color:#94a3b8;margin-bottom:1.25rem;">Could not load bundle at ' + script.src + '. Ensure the assets/ directory is pushed to your GitHub repository.</p>' +
-                  '<button onclick="window.location.reload(true)" style="background:#0d9488;color:#fff;border:none;padding:0.6rem 1.25rem;border-radius:0.75rem;cursor:pointer;">Reload</button>' +
-                  '</div>';
-              }
-            };
-            document.body.appendChild(script);
-          }
+          // 2. Inject production JS
+          var script = document.createElement('script');
+          script.type = 'module';
+          script.src = base + 'assets/app.js';
+          script.onerror = function() {
+            if (window.__showAppErrorUI__) {
+              window.__showAppErrorUI__("Could not load bundle at " + script.src + ". Please verify that the assets/ folder is pushed to your GitHub repository.");
+            }
+          };
+          document.body.appendChild(script);
         }
       })();
     </script>

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { LeadRecord, DuplicateLogRecord, SearchSessionRecord, LeadQualityGrade } from "../types";
 import { leadDatabase, calculateDataFreshness } from "../services/leadDatabase";
+import { searchLeadsAdvanced } from "../services/customerSearch";
 
 interface LeadIntelligenceDatabaseProps {
   onSelectLeadForCRM?: (lead: LeadRecord) => void;
@@ -79,42 +80,17 @@ export default function LeadIntelligenceDatabase({ onSelectLeadForCRM }: LeadInt
   const countriesList = useMemo(() => Array.from(new Set(leads.map(l => l.country).filter(Boolean))).sort(), [leads]);
   const businessTypesList = useMemo(() => Array.from(new Set(leads.map(l => l.business_type).filter(Boolean))).sort(), [leads]);
 
-  // Filtered Leads
+  // Filtered Leads with High-Accuracy Bilingual Search and Anti-Duplication
   const filteredLeads = useMemo(() => {
-    return leads.filter(lead => {
-      // Search term
-      if (searchTerm) {
-        const query = searchTerm.toLowerCase();
-        const match = 
-          lead.company_name?.toLowerCase().includes(query) ||
-          lead.country?.toLowerCase().includes(query) ||
-          lead.city?.toLowerCase().includes(query) ||
-          lead.normalized_domain?.toLowerCase().includes(query) ||
-          lead.email?.toLowerCase().includes(query) ||
-          lead.phone?.includes(query) ||
-          lead.contact_person?.toLowerCase().includes(query) ||
-          lead.lead_id?.toLowerCase().includes(query) ||
-          (lead.product_categories && lead.product_categories.some(c => c.toLowerCase().includes(query)));
-        if (!match) return false;
-      }
+    const searchResults = searchLeadsAdvanced(leads, searchTerm, {
+      filterCountry: selectedCountry,
+      filterQualityGrade: selectedQualityGrade,
+      filterEmailStatus: selectedEmailStatus,
+      filterVerificationStatus: selectedVerificationStatus,
+      filterBusinessType: selectedBusinessType
+    });
 
-      // Country filter
-      if (selectedCountry !== "All" && lead.country !== selectedCountry) return false;
-
-      // Quality grade filter
-      if (selectedQualityGrade !== "All" && lead.lead_quality_grade !== selectedQualityGrade) return false;
-
-      // Email status filter
-      if (selectedEmailStatus !== "All" && lead.email_verification_status !== selectedEmailStatus) return false;
-
-      // Verification status filter
-      if (selectedVerificationStatus !== "All" && lead.verification_status !== selectedVerificationStatus) return false;
-
-      // Business type filter
-      if (selectedBusinessType !== "All" && lead.business_type !== selectedBusinessType) return false;
-
-      return true;
-    }).sort((a, b) => {
+    return searchResults.sort((a, b) => {
       let valA: any = a.lead_quality_score;
       let valB: any = b.lead_quality_score;
       if (sortBy === "name") {

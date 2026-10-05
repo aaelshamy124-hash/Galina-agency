@@ -81,6 +81,8 @@ export interface ProspectBuyer {
   emailVerificationDate?: string;
   source_evidence?: string;
   source_urls?: string[];
+  isAiDiscovered?: boolean;
+  batchId?: string;
 }
 
 export type EmailVerificationStatus = 
@@ -206,6 +208,49 @@ export interface DuplicateLogRecord {
   detected_date: string;
   search_session_id?: string;
   status: DuplicateStatus;
+}
+
+export interface PotentialLeadRecord {
+  id: string;
+  company_name: string;
+  country: string;
+  city?: string;
+  business_type?: string;
+  product_category?: string;
+  website?: string;
+  email?: string;
+  reason_not_fully_verified: string;
+  missing_information: string;
+  lead_quality_score: number;
+  duplicate_risk_score: number;
+  source_evidence?: string;
+}
+
+export interface RejectedLeadRecord {
+  id: string;
+  company_name: string;
+  country: string;
+  reason_rejected: string;
+  duplicate_of?: string;
+  evidence: string;
+  detected_at: string;
+  duplicate_risk_score: number;
+}
+
+export interface SearchAuditSummary {
+  companiesFound: number;
+  newUniqueLeads: number;
+  existingDuplicates: number;
+  possibleDuplicates: number;
+  rejectedLeads: number;
+  verifiedLeads: number;
+  potentialLeads: number;
+  averageLeadScore: number;
+  emailsVerified: number;
+  emailsUnverified: number;
+  verificationDate: string;
+  passCriteriaNotice?: string;
+  searchStrategiesUsed?: string[];
 }
 
 export interface SearchSessionRecord {

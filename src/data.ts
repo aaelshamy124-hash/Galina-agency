@@ -1,4 +1,5 @@
 import { Product, Country, ProspectBuyer, Supplier, Exhibition, Competitor } from "./types";
+import { VERIFIED_GLOBAL_BUYERS } from "./data/verifiedBuyers";
 
 export const INITIAL_PRODUCTS: Product[] = [
   {
@@ -275,10 +276,42 @@ export const INITIAL_COUNTRIES: Country[] = [
     tariffRate: "10.0% - 14.0% (Mercosur Tariff)",
     certificates: ["MAPA Registration", "ANVISA Clearance", "ISO 22000"],
     marketVibe: "Competitive"
+  },
+  {
+    id: "c-netherlands",
+    name: "Netherlands",
+    code: "NL",
+    flag: "🇳🇱",
+    population: "18M",
+    foodImportValue: "$48B",
+    vegImportValue: "$2.4B",
+    currency: "EUR (€)",
+    language: "Dutch & English",
+    ports: ["Port of Rotterdam", "Port of Amsterdam"],
+    tariffRate: "0.0% (EU Free Trade / Direct Egyptian Quotas)",
+    certificates: ["GLOBALG.A.P.", "BRCGS Food Safety Issue 9", "IFS Food v8", "PlanetProof"],
+    marketVibe: "Excellent"
+  },
+  {
+    id: "c-belgium",
+    name: "Belgium",
+    code: "BE",
+    flag: "🇧🇪",
+    population: "12M",
+    foodImportValue: "$32B",
+    vegImportValue: "$1.8B",
+    currency: "EUR (€)",
+    language: "Dutch & French",
+    ports: ["Port of Antwerp-Bruges", "Ghent"],
+    tariffRate: "0.0% (EU Common Customs)",
+    certificates: ["BRCGS Food Safety (AA)", "IFS Food v8", "FSSC 22000"],
+    marketVibe: "Excellent"
   }
 ];
 
-export const INITIAL_BUYERS: ProspectBuyer[] = [
+export const INITIAL_BUYERS: ProspectBuyer[] = VERIFIED_GLOBAL_BUYERS;
+
+const LEGACY_BUYERS: ProspectBuyer[] = [
   {
     id: "buyer-1",
     name: "Edeka Fruchtkontor & Frozen GmbH",
