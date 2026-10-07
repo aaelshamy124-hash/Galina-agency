@@ -132,69 +132,144 @@ const CONCEPT_MAPPINGS: Record<string, string[]> = {
   "frozen": ["مجمد", "مجمدة", "مجمدات", "تجميد"],
   "iqf": ["مجمد", "مجمدة", "مجمدات", "تجميد"],
 
-  // Countries
-  "سعوديه": ["saudi", "arabia", "ksa", "riyadh", "jeddah"],
-  "السعوديه": ["saudi", "arabia", "ksa", "riyadh", "jeddah"],
-  "سعودية": ["saudi", "arabia", "ksa", "riyadh", "jeddah"],
-  "السعودية": ["saudi", "arabia", "ksa", "riyadh", "jeddah"],
-  "المملكه": ["saudi", "arabia", "ksa"],
-  "المملكة": ["saudi", "arabia", "ksa"],
-  "saudi": ["السعودية", "سعودية", "المملكة"],
-  "ksa": ["السعودية", "سعودية"],
-  "المانيا": ["germany", "deutschland", "german", "hamburg", "berlin"],
-  "ألمانيا": ["germany", "deutschland", "german", "hamburg", "berlin"],
-  "germany": ["ألمانيا", "المانيا"],
-  "deutschland": ["ألمانيا", "المانيا"],
-  "امارات": ["uae", "emirates", "dubai", "abu dhabi", "sharjah"],
-  "الامارات": ["uae", "emirates", "dubai", "abu dhabi", "sharjah"],
-  "الإمارات": ["uae", "emirates", "dubai", "abu dhabi", "sharjah"],
+  // Countries & Nationalities (Zero-overlap bilingual precision)
+  "ايطاليا": ["italy", "italian", "italia", "ايطالي", "ايطاليه", "ايطاليين", "rome", "milan"],
+  "إيطاليا": ["italy", "italian", "italia", "ايطالي", "ايطاليه", "ايطاليين"],
+  "ايطالي": ["italy", "italian", "italia", "ايطاليا"],
+  "إيطالي": ["italy", "italian", "italia", "ايطاليا"],
+  "ايطاليه": ["italy", "italian", "italia", "ايطاليا"],
+  "إيطالية": ["italy", "italian", "italia", "ايطاليا"],
+  "ايطاليين": ["italy", "italian", "italia", "ايطاليا"],
+  "italy": ["ايطاليا", "إيطاليا", "ايطالي", "italian", "italia"],
+  "italian": ["ايطاليا", "إيطاليا", "ايطالي", "italy"],
+  "italia": ["ايطاليا", "إيطاليا", "ايطالي", "italy"],
+
+  "المانيا": ["germany", "deutschland", "german", "الماني", "المانيه", "المانيين", "hamburg", "berlin"],
+  "ألمانيا": ["germany", "deutschland", "german", "ألماني", "المانيه"],
+  "الماني": ["germany", "german", "deutschland", "المانيا"],
+  "ألماني": ["germany", "german", "deutschland", "المانيا"],
+  "المانيه": ["germany", "german", "المانيا"],
+  "ألمانية": ["germany", "german", "المانيا"],
+  "germany": ["المانيا", "ألمانيا", "الماني", "german"],
+  "deutschland": ["المانيا", "ألمانيا", "الماني"],
+  "german": ["المانيا", "ألمانيا", "الماني", "germany"],
+
+  "سعوديه": ["saudi", "arabia", "ksa", "سعودي", "السعودية", "riyadh", "jeddah"],
+  "السعوديه": ["saudi", "arabia", "ksa", "سعودي", "riyadh", "jeddah"],
+  "سعودية": ["saudi", "arabia", "ksa", "سعودي", "riyadh", "jeddah"],
+  "السعودية": ["saudi", "arabia", "ksa", "سعودي", "riyadh", "jeddah"],
+  "سعودي": ["saudi", "arabia", "ksa", "السعودية"],
+  "السعودي": ["saudi", "arabia", "ksa", "السعودية"],
+  "saudi": ["السعودية", "سعودية", "سعودي"],
+  "ksa": ["السعودية", "سعودية", "سعودي"],
+
+  "امارات": ["uae", "emirates", "dubai", "abu dhabi", "اماراتي", "sharjah"],
+  "الامارات": ["uae", "emirates", "dubai", "abu dhabi", "اماراتي"],
+  "الإمارات": ["uae", "emirates", "dubai", "abu dhabi", "إماراتي"],
+  "اماراتي": ["uae", "emirates", "الامارات"],
+  "إماراتي": ["uae", "emirates", "الامارات"],
   "دبي": ["dubai", "uae", "الامارات"],
   "ابوظبي": ["abu dhabi", "uae", "الامارات"],
   "أبوظبي": ["abu dhabi", "uae", "الامارات"],
-  "uae": ["الإمارات", "الامارات"],
+  "uae": ["الإمارات", "الامارات", "اماراتي"],
   "emirates": ["الإمارات", "الامارات"],
-  "بريطانيا": ["uk", "united kingdom", "britain", "england", "london"],
-  "المملكة المتحدة": ["uk", "united kingdom", "britain", "london"],
+
+  "بريطانيا": ["uk", "united kingdom", "britain", "بريطاني", "انجلترا", "london"],
+  "بريطاني": ["uk", "united kingdom", "britain", "بريطانيا"],
+  "بريطانيه": ["uk", "united kingdom", "britain", "بريطانيا"],
+  "بريطانية": ["uk", "united kingdom", "britain", "بريطانيا"],
+  "المملكة المتحدة": ["uk", "united kingdom", "britain", "بريطانيا"],
+  "المملكه المتحده": ["uk", "united kingdom", "britain", "بريطانيا"],
   "انجلترا": ["england", "uk", "britain", "london"],
-  "uk": ["بريطانيا", "المملكة المتحدة", "انجلترا"],
-  "امريكا": ["usa", "united states", "america"],
-  "أمريكا": ["usa", "united states", "america"],
-  "الولايات المتحدة": ["usa", "united states", "america"],
-  "usa": ["أمريكا", "امريكا", "الولايات المتحدة"],
-  "america": ["أمريكا", "امريكا"],
-  "فرنسا": ["france", "french", "paris"],
-  "france": ["فرنسا"],
+  "انجليزي": ["uk", "england", "british"],
+  "uk": ["بريطانيا", "المملكة المتحدة", "المملكه المتحده", "انجلترا"],
+  "britain": ["بريطانيا", "المملكة المتحدة"],
+  "british": ["بريطاني", "بريطانيا"],
+
+  "امريكا": ["usa", "united states", "america", "امريكي"],
+  "أمريكا": ["usa", "united states", "america", "أمريكي"],
+  "امريكي": ["usa", "united states", "america", "امريكا"],
+  "أمريكي": ["usa", "united states", "america", "أمريكا"],
+  "الولايات المتحدة": ["usa", "united states", "america", "امريكا"],
+  "الولايات المتحده": ["usa", "united states", "america", "امريكا"],
+  "usa": ["أمريكا", "امريكا", "امريكي", "الولايات المتحدة", "الولايات المتحده"],
+  "america": ["أمريكا", "امريكا", "امريكي"],
+  "american": ["امريكي", "أمريكي", "امريكا"],
+
+  "فرنسا": ["france", "french", "فرنسي", "فرنسيه", "paris"],
+  "فرنسي": ["france", "french", "فرنسا"],
+  "فرنسيه": ["france", "french", "فرنسا"],
+  "فرنسية": ["france", "french", "فرنسا"],
+  "france": ["فرنسا", "فرنسي"],
   "french": ["فرنسا", "فرنسي"],
-  "ايطاليا": ["italy", "italian", "italia", "rome", "milan"],
-  "إيطاليا": ["italy", "italian", "italia", "rome", "milan"],
-  "italy": ["إيطاليا", "ايطاليا"],
-  "italia": ["إيطاليا", "ايطاليا"],
-  "اسبانيا": ["spain", "spanish", "espana", "madrid", "barcelona"],
-  "إسبانيا": ["spain", "spanish", "espana", "madrid", "barcelona"],
-  "spain": ["إسبانيا", "اسبانيا"],
-  "espana": ["إسبانيا", "اسبانيا"],
-  "كندا": ["canada", "canadian", "toronto", "montreal"],
-  "canada": ["كندا"],
-  "بولندا": ["poland", "polish", "polska", "warsaw"],
-  "poland": ["بولندا"],
-  "polska": ["بولندا"],
-  "يابان": ["japan", "japanese", "tokyo"],
-  "اليابان": ["japan", "japanese", "tokyo"],
-  "japan": ["اليابان", "يابان"],
-  "كوريا": ["korea", "south korea", "korean", "seoul"],
-  "korea": ["كوريا"],
-  "برازيل": ["brazil", "brazilian", "brasil", "sao paulo"],
-  "البرازيل": ["brazil", "brazilian", "brasil"],
-  "brazil": ["البرازيل", "برازيل"],
-  "هولندا": ["netherlands", "dutch", "holland", "rotterdam", "amsterdam"],
-  "الهولندا": ["netherlands", "dutch", "holland", "rotterdam"],
-  "netherlands": ["هولندا", "الهولندا"],
-  "holland": ["هولندا"],
+
+  "اسبانيا": ["spain", "spanish", "espana", "اسباني", "اسبانيه", "madrid", "barcelona"],
+  "إسبانيا": ["spain", "spanish", "espana", "إسباني", "إسبانيه", "madrid", "barcelona"],
+  "اسباني": ["spain", "spanish", "espana", "اسبانيا"],
+  "إسباني": ["spain", "spanish", "espana", "إسبانيا"],
+  "اسبانيه": ["spain", "spanish", "اسبانيا"],
+  "إسبانية": ["spain", "spanish", "إسبانيا"],
+  "spain": ["إسبانيا", "اسبانيا", "اسباني"],
+  "spanish": ["إسبانيا", "اسبانيا", "اسباني"],
+
+  "بولندا": ["poland", "polish", "polska", "بولندي", "warsaw"],
+  "بولندي": ["poland", "polish", "بولندا"],
+  "بولنديه": ["poland", "polish", "بولندا"],
+  "بولندية": ["poland", "polish", "بولندا"],
+  "poland": ["بولندا", "بولندي"],
+  "polish": ["بولندا", "بولندي"],
+
+  "هولندا": ["netherlands", "dutch", "holland", "هولندي", "rotterdam", "amsterdam"],
+  "الهولندا": ["netherlands", "dutch", "holland", "هولندي", "rotterdam"],
+  "هولندي": ["netherlands", "dutch", "holland", "هولندا"],
+  "هولنديه": ["netherlands", "dutch", "هولندا"],
+  "هولندية": ["netherlands", "dutch", "هولندا"],
+  "netherlands": ["هولندا", "هولندي"],
   "dutch": ["هولندا", "هولندي"],
-  "بلجيكا": ["belgium", "belgian", "antwerp", "brussels"],
-  "البلجيكا": ["belgium", "belgian", "antwerp"],
-  "belgium": ["بلجيكا"],
+  "holland": ["هولندا", "هولندي"],
+
+  "بلجيكا": ["belgium", "belgian", "بلجيكي", "antwerp", "brussels"],
+  "البلجيكا": ["belgium", "belgian", "بلجيكي", "antwerp"],
+  "بلجيكي": ["belgium", "belgian", "بلجيكا"],
+  "بلجيكيه": ["belgium", "belgian", "بلجيكا"],
+  "بلجيكية": ["belgium", "belgian", "بلجيكا"],
+  "belgium": ["بلجيكا", "بلجيكي"],
   "belgian": ["بلجيكا", "بلجيكي"],
+
+  "كندا": ["canada", "canadian", "كندي", "toronto", "montreal"],
+  "كندي": ["canada", "canadian", "كندا"],
+  "كنديه": ["canada", "canadian", "كندا"],
+  "كندية": ["canada", "canadian", "كندا"],
+  "canada": ["كندا", "كندي"],
+  "canadian": ["كندا", "كندي"],
+
+  "يابان": ["japan", "japanese", "ياباني", "tokyo"],
+  "اليابان": ["japan", "japanese", "ياباني", "tokyo"],
+  "ياباني": ["japan", "japanese", "اليابان", "يابان"],
+  "يابانيه": ["japan", "japanese", "اليابان"],
+  "يابانية": ["japan", "japanese", "اليابان"],
+  "japan": ["اليابان", "يابان", "ياباني"],
+  "japanese": ["اليابان", "يابان", "ياباني"],
+
+  "كوريا": ["korea", "south korea", "korean", "كوري", "seoul"],
+  "كوريا الجنوبية": ["korea", "south korea", "korean", "كوري", "seoul"],
+  "كوريا الجنوبيه": ["korea", "south korea", "korean", "كوري", "seoul"],
+  "كوري": ["korea", "south korea", "korean", "كوريا"],
+  "كوريه": ["korea", "south korea", "korean", "كوريا"],
+  "كورية": ["korea", "south korea", "korean", "كوريا"],
+  "korea": ["كوريا", "كوري"],
+  "south korea": ["كوريا", "كوريا الجنوبية", "كوري"],
+  "korean": ["كوريا", "كوري"],
+
+  "برازيل": ["brazil", "brazilian", "brasil", "برازيلي", "sao paulo"],
+  "البرازيل": ["brazil", "brazilian", "brasil", "برازيلي"],
+  "برازيلي": ["brazil", "brazilian", "brasil", "البرازيل", "برازيل"],
+  "برازيليه": ["brazil", "brazilian", "brasil", "البرازيل"],
+  "برازيلية": ["brazil", "brazilian", "brasil", "البرازيل"],
+  "brazil": ["البرازيل", "برازيل", "برازيلي"],
+  "brasil": ["البرازيل", "برازيل", "برازيلي"],
+  "brazilian": ["البرازيل", "برازيل", "برازيلي"],
+
   "مصر": ["egypt", "egyptian", "alexandria", "cairo"],
   "المصرية": ["egypt", "egyptian"],
   "egypt": ["مصر", "المصرية"],
@@ -261,6 +336,48 @@ const CONCEPT_MAPPINGS: Record<string, string[]> = {
   "اي اف اس": ["ifs", "food v8"],
   "ifs": ["شهادة اي اف اس"]
 };
+
+/**
+ * Normalizes any Arabic, English, or regional country variation into canonical country name
+ */
+export function normalizeCountryName(input: string | null | undefined): string {
+  if (!input) return "";
+  const norm = normalizeSearchText(input);
+
+  // Check UK first to avoid collision with "المملكه"
+  if (norm.includes("المملكه المتحده") || norm.includes("بريطان") || norm.includes("انجلتر") || norm.includes("united kingdom") || norm.includes("britain") || /\buk\b/.test(norm)) return "UK";
+  if (norm.includes("الولايات المتحده") || norm.includes("امريك") || norm.includes("united states") || /\busa\b/.test(norm) || /\bamerica\b/.test(norm)) return "USA";
+  if (norm.includes("المملكه العربيه السعوديه") || norm.includes("سعود") || norm.includes("saudi") || /\bksa\b/.test(norm)) return "Saudi Arabia";
+  if (norm.includes("امارات") || norm.includes("الامارات") || norm.includes("دبي") || norm.includes("ابوظبي") || norm.includes("الشارقه") || norm.includes("emirates") || norm.includes("dubai") || norm.includes("abu dhabi") || /\buae\b/.test(norm)) return "UAE";
+  if (norm.includes("ايطال") || norm.includes("ital")) return "Italy";
+  if (norm.includes("المان") || norm.includes("german") || norm.includes("deutsch")) return "Germany";
+  if (norm.includes("فرنس") || norm.includes("franc")) return "France";
+  if (norm.includes("اسبان") || norm.includes("spain") || norm.includes("espan")) return "Spain";
+  if (norm.includes("بولند") || norm.includes("poland") || norm.includes("polsk")) return "Poland";
+  if (norm.includes("هولند") || norm.includes("netherland") || norm.includes("holland") || norm.includes("dutch")) return "Netherlands";
+  if (norm.includes("بلجيك") || norm.includes("belgi")) return "Belgium";
+  if (norm.includes("كند") || norm.includes("canad")) return "Canada";
+  if (norm.includes("يابان") || norm.includes("japan")) return "Japan";
+  if (norm.includes("كوري") || norm.includes("korea")) return "South Korea";
+  if (norm.includes("برازيل") || norm.includes("brazil") || norm.includes("brasil")) return "Brazil";
+
+  return input.trim();
+}
+
+/**
+ * Detects if a search query contains a specific country reference in Arabic or English
+ */
+export function detectCountryInQuery(query: string): string | null {
+  if (!query) return null;
+  const canonical = normalizeCountryName(query);
+  const knownCountries = [
+    "Italy", "Germany", "Saudi Arabia", "UAE", "France", "UK", 
+    "Spain", "Poland", "Netherlands", "Belgium", "USA", "Canada", 
+    "Japan", "South Korea", "Brazil"
+  ];
+  if (knownCountries.includes(canonical)) return canonical;
+  return null;
+}
 
 /**
  * Builds concept groups for a query:
@@ -353,13 +470,36 @@ export function buildQueryConceptGroups(query: string): string[][] {
   return groups;
 }
 
+const COUNTRY_SEARCH_KEYWORDS: Record<string, string> = {
+  "Italy": "ايطاليا إيطاليا ايطالي إيطالي ايطالية إيطالية italia italian italy rome milan cesena rimini verona",
+  "Germany": "المانيا ألمانيا الماني ألماني المانية ألمانية deutschland german germany hamburg berlin koln cologne dusseldorf",
+  "Saudi Arabia": "السعودية سعودية سعودي السعودية المملكة العربية السعودية المملكه العربيه السعوديه ksa saudi riyadh jeddah dammam",
+  "UAE": "الامارات الإمارات اماراتي إماراتي اماراتية دبي ابوظبي أبوظبي الشارقة uae emirates dubai abu dhabi sharjah",
+  "UK": "المملكة المتحدة المملكه المتحده بريطانيا بريطاني بريطانية انجلترا انجليزي لندن uk united kingdom britain england london",
+  "USA": "الولايات المتحدة الولايات المتحده امريكا أمريكا امريكي أمريكي امريكية united states america usa us",
+  "France": "فرنسا فرنسي فرنسية france french paris rungis marseille",
+  "Spain": "اسبانيا إسبانيا اسباني إسباني اسبانية spain spanish espana madrid barcelona valencia",
+  "Poland": "بولندا بولندي بولندية poland polish polska warsaw gdansk",
+  "Netherlands": "هولندا هولندي هولندية netherlands dutch holland rotterdam amsterdam",
+  "Belgium": "بلجيكا بلجيكي بلجيكية belgium belgian brussels antwerp",
+  "Canada": "كندا كندي كندية canada canadian toronto montreal vancouver",
+  "Japan": "اليابان يابان ياباني يابانية japan japanese tokyo kobe osaka",
+  "South Korea": "كوريا كوري كورية كوريا الجنوبية كوريا الجنوبيه korea south korea seoul incheon busan",
+  "Brazil": "البرازيل برازيل برازيلي برازيلية brasil brazil brazilian sao paulo"
+};
+
 /**
  * Builds the searchable text corpus for a buyer
  */
 function buildBuyerSearchCorpus(buyer: ProspectBuyer): string {
+  const cKey = normalizeCountryName(buyer.country);
+  const countryKeywords = COUNTRY_SEARCH_KEYWORDS[cKey] || "";
+
   return [
     buyer.name,
     buyer.country,
+    cKey,
+    countryKeywords,
     buyer.city,
     buyer.purchasingManager,
     buyer.procurementRole,
@@ -428,10 +568,17 @@ export function searchBuyersAdvanced(
     }
   }
 
+  const detectedCountry = detectCountryInQuery(query);
+  const effectiveCountryFilter = (options?.filterCountry && options.filterCountry !== "All")
+    ? options.filterCountry
+    : detectedCountry;
+
   // 2. Base filter against dropdown filters (Country, Crop, Cert, etc.)
   const candidatePool = deduplicatedPool.filter(buyer => {
-    if (options?.filterCountry && options.filterCountry !== "All") {
-      if (buyer.country.toLowerCase() !== options.filterCountry.toLowerCase()) {
+    if (effectiveCountryFilter) {
+      const targetCountry = normalizeCountryName(effectiveCountryFilter).toLowerCase();
+      const buyerCountry = normalizeCountryName(buyer.country).toLowerCase();
+      if (buyerCountry !== targetCountry) {
         return false;
       }
     }
@@ -560,10 +707,19 @@ export function searchLeadsAdvanced(
     }
   }
 
+  const detectedCountry = detectCountryInQuery(query);
+  const effectiveCountryFilter = (options?.filterCountry && options.filterCountry !== "All")
+    ? options.filterCountry
+    : detectedCountry;
+
   // Filter against dropdown criteria
   const candidatePool = deduplicated.filter(lead => {
-    if (options?.filterCountry && options.filterCountry !== "All" && lead.country !== options.filterCountry) {
-      return false;
+    if (effectiveCountryFilter) {
+      const targetCountry = normalizeCountryName(effectiveCountryFilter).toLowerCase();
+      const leadCountry = normalizeCountryName(lead.country).toLowerCase();
+      if (leadCountry !== targetCountry) {
+        return false;
+      }
     }
     if (options?.filterQualityGrade && options.filterQualityGrade !== "All" && lead.lead_quality_grade !== options.filterQualityGrade) {
       return false;
@@ -595,9 +751,14 @@ export function searchLeadsAdvanced(
   const scored: { lead: LeadRecord; score: number; matchCount: number }[] = [];
 
   for (const lead of candidatePool) {
+    const cKey = normalizeCountryName(lead.country);
+    const countryKeywords = COUNTRY_SEARCH_KEYWORDS[cKey] || "";
+
     const textCorpus = [
       lead.company_name,
       lead.country,
+      cKey,
+      countryKeywords,
       lead.city,
       lead.business_type,
       lead.buyer_type,

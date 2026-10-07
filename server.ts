@@ -3,6 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
+import { VERIFIED_GLOBAL_BUYERS } from "./src/data/verifiedBuyers";
 
 // Load environment variables
 dotenv.config();
@@ -35,7 +36,7 @@ if (apiKey && apiKey !== "MY_GEMINI_API_KEY") {
 }
 
 // ----------------------------------------------------
-// API ENDPOINTS
+// API ENDPOINTS & ZERO-OVERLAP COUNTRY NORMALIZATION
 // ----------------------------------------------------
 
 export interface VerifiedCompany {
@@ -56,11 +57,34 @@ export type EmailVerificationStatus =
   | "NOT VERIFIED"
   | "NO VERIFIED EMAIL FOUND";
 
-let realCompaniesMap: Record<string, VerifiedCompany[]> = {};
+export { normalizeCountryName } from "./src/services/customerSearch";
+
+// Build verified company catalogs dynamically from authentic curated database
+const buildRealCompaniesMap = (): Record<string, VerifiedCompany[]> => {
+  const map: Record<string, VerifiedCompany[]> = {};
+  for (const b of VERIFIED_GLOBAL_BUYERS) {
+    if (!map[b.country]) map[b.country] = [];
+    const domain = b.website ? b.website.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] : 'company.com';
+    map[b.country].push({
+      name: b.name,
+      type: b.importerType,
+      city: b.city,
+      domain: domain,
+      realEmail: b.realEmail || b.email,
+      procurementEmail: b.procurementEmail || b.email,
+      realPhone: b.realPhone || b.phone,
+      headquartersAddress: b.headquartersAddress || `${b.city}, ${b.country}`
+    });
+  }
+  return map;
+};
+
+let realCompaniesMap: Record<string, VerifiedCompany[]> = buildRealCompaniesMap();
 
 // 1. AI Market Evaluation & Buyer Prospecting
 app.post("/api/gemini/market-finder", async (req, res) => {
   const { country, product, mode = "fast", lang = "en" } = req.body;
+  const canonicalCountry = normalizeCountryName(country);
 
   if (!country || !product) {
     return res.status(400).json({ error: "Country and Product parameters are required." });
@@ -70,6 +94,9 @@ app.post("/api/gemini/market-finder", async (req, res) => {
   // HIGH-SPEED PROCEDURAL TRADE GENIUS (Fast Mode - Under 10ms!)
   // ----------------------------------------------------
   const generateFastMarketReport = (cName: string, pName: string, reqLang = "en") => {
+    // Zero-overlap normalization: resolve any Arabic or localized name to canonical English
+    const canonicalCountry = normalizeCountryName(cName);
+    cName = canonicalCountry;
     let baseScore = 88;
     if (["Germany", "Saudi Arabia", "UAE", "USA", "UK", "France"].includes(cName)) {
       baseScore = 94 + (cName.length % 4); // 94 to 97
@@ -125,718 +152,10 @@ app.post("/api/gemini/market-finder", async (req, res) => {
 
     // Authentic produce & food import company pools by country
     // Authentic produce & food import companies with REAL verified corporate emails, phones, and addresses
-    realCompaniesMap = {
-      "Saudi Arabia": [
-        { 
-          name: "شركة المنجم للأغذية (Al Munajem Foods Co.)", 
-          type: "Importer & Distributor", 
-          city: "Riyadh", 
-          domain: "almunajemfoods.com", 
-          realEmail: "info@munajem.com", 
-          procurementEmail: "sourcing@almunajemfoods.com", 
-          realPhone: "+966 11 475 5555", 
-          headquartersAddress: "7510 طريق التخصصي، حي المعذر الشمالي، الرياض 12334" 
-        },
-        { 
-          name: "مجموعة صافولا - قطاع سلاسل الإمداد (Savola Group)", 
-          type: "Food Processing / Manufacturing", 
-          city: "Jeddah", 
-          domain: "savola.com", 
-          realEmail: "info@savola.com", 
-          procurementEmail: "procurement@savola.com", 
-          realPhone: "+966 12 268 7755", 
-          headquartersAddress: "برج صافولا، طريق الأمير فيصل بن فهد، حي الشاطئ، جدة" 
-        },
-        { 
-          name: "شركة بنده للتجزئة - إدارة الخضار والفواكه (Panda Retail Co.)", 
-          type: "Retail Chain Buy-House", 
-          city: "Jeddah", 
-          domain: "panda.com.sa", 
-          realEmail: "customercare@panda.com.sa", 
-          procurementEmail: "produce.procurement@panda.com.sa", 
-          realPhone: "+966 920027707", 
-          headquartersAddress: "مجمع الأعمال، برج صافولا، ص.ب 7333، جدة 23511" 
-        },
-        { 
-          name: "أسواق التميمي - إدارة الاستيراد المباشر (Tamimi Markets)", 
-          type: "Retail Chain Buy-House", 
-          city: "Khobar", 
-          domain: "tamimimarkets.com", 
-          realEmail: "customercare@tamimimarkets.com", 
-          procurementEmail: "import.produce@tamimimarkets.com", 
-          realPhone: "+966 13 847 4444", 
-          headquartersAddress: "طريق الملك فهد، ص.ب 172، الخبر 31952" 
-        },
-        { 
-          name: "مجموعة السنبلة للأغذية المجمدة (Sunbulah Group)", 
-          type: "Frozen Food Company", 
-          city: "Jeddah", 
-          domain: "sunbulahgroup.com", 
-          realEmail: "info@sunbulah.com", 
-          procurementEmail: "sourcing@sunbulahgroup.com", 
-          realPhone: "+966 12 614 3938", 
-          headquartersAddress: "مجمع جمجوم التجاري، حي الحمراء، ص.ب 8960، جدة 21492" 
-        },
-        { 
-          name: "شركة أسواق عبد الله العثيم (Al Othaim Supermarkets)", 
-          type: "Retail Chain Buy-House", 
-          city: "Riyadh", 
-          domain: "othaimmarkets.com", 
-          realEmail: "wecare@othaimmarkets.com", 
-          procurementEmail: "direct-import@othaimmarkets.com", 
-          realPhone: "+966 920000702", 
-          headquartersAddress: "الطريق الدائري الشرقي - مخرج 14، حي الربوة، الرياض 11531" 
-        },
-        { 
-          name: "حلواني إخوان - إدارة الخامات الزراعية (Halwani Bros)", 
-          type: "Food Factory", 
-          city: "Jeddah", 
-          domain: "halwani.com.sa", 
-          realEmail: "info@halwani.com.sa", 
-          procurementEmail: "agro.purchase@halwani.com.sa", 
-          realPhone: "+966 12 636 6667", 
-          headquartersAddress: "المدينة الصناعية المرحلة الرابعة، شارع 70، ص.ب 690، جدة 21421" 
-        },
-        { 
-          name: "الشركة الوطنية للتنمية الزراعية (NADEC Procurement)", 
-          type: "Food Processing / Manufacturing", 
-          city: "Riyadh", 
-          domain: "nadec.com.sa", 
-          realEmail: "info@nadec.com.sa", 
-          procurementEmail: "procurement@nadec.com.sa", 
-          realPhone: "+966 11 202 7777", 
-          headquartersAddress: "طريق الدائري الشمالي، حي النخيل، ص.ب 2557، الرياض 11461" 
-        },
-        { 
-          name: "مجموعة أمريكانا السعودية (Americana Group KSA)", 
-          type: "Food Service Distributor", 
-          city: "Jeddah", 
-          domain: "americana-group.com", 
-          realEmail: "info@americana-group.com", 
-          procurementEmail: "supplychain@americana-group.com", 
-          realPhone: "+966 12 635 0000", 
-          headquartersAddress: "طريق المدينة المنورة، ص.ب 22425، جدة 21495" 
-        },
-        { 
-          name: "شركة ديل مونتي السعودية (Fresh Del Monte Saudi Arabia)", 
-          type: "Importer & Distributor", 
-          city: "Jeddah", 
-          domain: "delmonte-sa.com", 
-          realEmail: "contact-mena@freshdelmonte.com", 
-          procurementEmail: "saudi-orders@freshdelmonte.com", 
-          realPhone: "+966 12 606 8800", 
-          headquartersAddress: "طريق الملك عبد العزيز، حي الشاطئ، جدة" 
-        },
-        { 
-          name: "شركة قودي للأغذية - باسمح (Goody Foods Basamh)", 
-          type: "Food Factory", 
-          city: "Jeddah", 
-          domain: "goody.com.sa", 
-          realEmail: "contact@basamh.com", 
-          procurementEmail: "procurement@goody.com.sa", 
-          realPhone: "+966 12 667 4000", 
-          headquartersAddress: "شارع فلسطين، حي الرويس، ص.ب 4271، جدة 21491" 
-        },
-        { 
-          name: "شركة الدانوب للمواد الغذائية (Danube Supermarkets)", 
-          type: "Retail Chain Buy-House", 
-          city: "Jeddah", 
-          domain: "danubeco.com", 
-          realEmail: "customercare@danubeco.com", 
-          procurementEmail: "import@danubeco.com", 
-          realPhone: "+966 12 660 7777", 
-          headquartersAddress: "تقاطع شارع صاري مع طريق المدينة، جدة" 
-        },
-        { 
-          name: "شركة أسواق الراية (Alraya Food Co.)", 
-          type: "Retail Chain Buy-House", 
-          city: "Jeddah", 
-          domain: "alraya.com.sa", 
-          realEmail: "customercare@alraya.com.sa", 
-          procurementEmail: "procurement@alraya.com.sa", 
-          realPhone: "+966 12 606 1111", 
-          headquartersAddress: "شارع الروضة، ص.ب 10185، جدة 21433" 
-        },
-        { 
-          name: "مؤسسة الخليج للتوريدات الغذائية (Gulf Food Supply)", 
-          type: "Wholesaler", 
-          city: "Dammam", 
-          domain: "gulffoodsupply.com.sa", 
-          realEmail: "info@gulffoodsupply.com.sa", 
-          procurementEmail: "sales@gulffoodsupply.com.sa", 
-          realPhone: "+966 13 833 3311", 
-          headquartersAddress: "شارع الميناء، حي السوق، الدمام 31411" 
-        }
-      ],
-      "UAE": [
-        { 
-          name: "Barakat Quality Plus LLC", 
-          type: "Food Processing / Manufacturing", 
-          city: "Dubai", 
-          domain: "barakatfresh.ae", 
-          realEmail: "info@barakatfresh.ae", 
-          procurementEmail: "customercare@barakatfresh.ae", 
-          realPhone: "+971 4 880 2121", 
-          headquartersAddress: "Dubai Industrial City (Saih Shuaib 2), P.O. Box 27151, Dubai" 
-        },
-        { 
-          name: "Truebell Marketing & Trading LLC", 
-          type: "Importer & Distributor", 
-          city: "Sharjah", 
-          domain: "truebell.org", 
-          realEmail: "info@truebell.org", 
-          procurementEmail: "food@truebell.org", 
-          realPhone: "+971 6 534 2111", 
-          headquartersAddress: "Dubai Investments Park / Sharjah Industrial Area 1, P.O. Box 5188, UAE" 
-        },
-        { 
-          name: "Farzana Trading LLC", 
-          type: "Wholesaler", 
-          city: "Dubai", 
-          domain: "farzana.ae", 
-          realEmail: "customercare@farzana.ae", 
-          procurementEmail: "info@farzanatrading.com", 
-          realPhone: "+971 4 320 0101", 
-          headquartersAddress: "Dubai Food District, Al Aweer Wholesale Market, Building C20, Dubai" 
-        },
-        { 
-          name: "Kibsons International Food Service", 
-          type: "Importer & Distributor", 
-          city: "Dubai", 
-          domain: "kibsons.com", 
-          realEmail: "customercare@kibsons.com", 
-          procurementEmail: "procurement@kibsons.com", 
-          realPhone: "+971 4 320 2727", 
-          headquartersAddress: "Al Manama Street, Ras Al Khor Industrial Area 2, P.O. Box 10609, Dubai" 
-        },
-        { 
-          name: "Lulu Group International Direct Procurement", 
-          type: "Retail Chain Buy-House", 
-          city: "Abu Dhabi", 
-          domain: "lulugroupinternational.com", 
-          realEmail: "headoffice@ae.lulumea.com", 
-          procurementEmail: "procurement@lulugroupinternational.com", 
-          realPhone: "+971 2 418 2000", 
-          headquartersAddress: "Y Tower, Al Nahyan Camp, P.O. Box 4048, Abu Dhabi" 
-        },
-        { 
-          name: "Spinneys Fresh Food Imports LLC", 
-          type: "Retail Chain Buy-House", 
-          city: "Dubai", 
-          domain: "spinneys.com", 
-          realEmail: "info@spinneys.com", 
-          procurementEmail: "customercare@spinneys.com", 
-          realPhone: "+971 4 355 5240", 
-          headquartersAddress: "Meydan Road, Nad Al Sheba 1, P.O. Box 677, Dubai" 
-        },
-        { 
-          name: "Fresh Fruit Company (FFC) Dubai", 
-          type: "Importer & Distributor", 
-          city: "Dubai", 
-          domain: "freshfruitcompany.com", 
-          realEmail: "info@freshfruitcompany.com", 
-          procurementEmail: "sales@freshfruitcompany.com", 
-          realPhone: "+971 4 333 1333", 
-          headquartersAddress: "Al Aweer Central Fruits & Vegetables Market, P.O. Box 7187, Dubai" 
-        },
-        { 
-          name: "Al Maya Group FMCG Division", 
-          type: "Retail Chain Buy-House", 
-          city: "Dubai", 
-          domain: "almayagroup.com", 
-          realEmail: "info@almayagroup.com", 
-          procurementEmail: "fmcg@almayagroup.com", 
-          realPhone: "+971 4 347 3500", 
-          headquartersAddress: "Al Quoz Industrial Area 3, P.O. Box 8476, Dubai" 
-        },
-        { 
-          name: "Transmed Overseas Foodservice", 
-          type: "Food Service Distributor", 
-          city: "Dubai", 
-          domain: "transmed.com", 
-          realEmail: "info@transmed.com", 
-          procurementEmail: "uae-contact@transmed.com", 
-          realPhone: "+971 4 334 9999", 
-          headquartersAddress: "Al Quoz Industrial Area 1, P.O. Box 54131, Dubai" 
-        },
-        { 
-          name: "Chef Middle East LLC (Produce Division)", 
-          type: "Hotel & Restaurant Supplier", 
-          city: "Dubai", 
-          domain: "chefmiddleeast.com", 
-          realEmail: "info@chefmiddleeast.com", 
-          procurementEmail: "orders@chefmiddleeast.com", 
-          realPhone: "+971 4 815 9888", 
-          headquartersAddress: "Dubai Investments Park 2, Jebel Ali, P.O. Box 26734, Dubai" 
-        }
-      ],
-      "Germany": [
-        { 
-          name: "Döhler Group Global Sourcing", 
-          type: "Food Factory", 
-          city: "Darmstadt", 
-          domain: "doehler.com", 
-          realEmail: "mailbox@doehler.com", 
-          procurementEmail: "purchasing@doehler.com", 
-          realPhone: "+49 6151 3060", 
-          headquartersAddress: "Riedstraße 7-9, 64295 Darmstadt, Germany" 
-        },
-        { 
-          name: "Edeka Fruchtkontor GmbH", 
-          type: "Retail Chain Buy-House", 
-          city: "Hamburg", 
-          domain: "edeka.de", 
-          realEmail: "fk-marketing@edeka.de", 
-          procurementEmail: "info@edeka.de", 
-          realPhone: "+49 40 30209 0", 
-          headquartersAddress: "Dessauer Straße 12, 20457 Hamburg, Germany" 
-        },
-        { 
-          name: "Tradin Organic Agriculture GmbH", 
-          type: "Importer & Distributor", 
-          city: "Hamburg", 
-          domain: "tradinorganic.com", 
-          realEmail: "info@tradinorganic.com", 
-          procurementEmail: "sourcing@tradinorganic.com", 
-          realPhone: "+49 40 4600 3990", 
-          headquartersAddress: "Poststraße 2-4, 20354 Hamburg, Germany" 
-        },
-        { 
-          name: "REWE Group International Procurement", 
-          type: "Retail Chain Buy-House", 
-          city: "Cologne", 
-          domain: "rewe-group.com", 
-          realEmail: "impressum@rewe.de", 
-          procurementEmail: "kontakt@rewe-group.com", 
-          realPhone: "+49 221 149-0", 
-          headquartersAddress: "Domstraße 20, 50668 Köln, Germany" 
-        },
-        { 
-          name: "Frosta AG Foodservice Division", 
-          type: "Frozen Food Company", 
-          city: "Bremerhaven", 
-          domain: "frosta.de", 
-          realEmail: "info@frosta.de", 
-          procurementEmail: "foodservice@frosta.de", 
-          realPhone: "+49 471 9736-0", 
-          headquartersAddress: "Am Lunedeich 116, 27572 Bremerhaven, Germany" 
-        },
-        { 
-          name: "SVZ International B.V. (German Desk)", 
-          type: "Food Processing / Manufacturing", 
-          city: "Bremen", 
-          domain: "svz.com", 
-          realEmail: "info@svz.com", 
-          procurementEmail: "sales@svz.com", 
-          realPhone: "+31 76 504 9494", 
-          headquartersAddress: "Oude Kerkstraat 10, 4878 AA Etten-Leur, Netherlands" 
-        },
-        { 
-          name: "Dirk Rossmann Tiefkühl & Bio-Food", 
-          type: "Retail Chain Buy-House", 
-          city: "Burgwedel", 
-          domain: "rossmann.de", 
-          realEmail: "dialog@rossmann.de", 
-          procurementEmail: "einkauf@rossmann.de", 
-          realPhone: "+49 5139 898-0", 
-          headquartersAddress: "Isernhägener Straße 16, 30938 Burgwedel, Germany" 
-        },
-        { 
-          name: "Cobana GmbH & Co. KG", 
-          type: "Importer & Distributor", 
-          city: "Hamburg", 
-          domain: "cobana.de", 
-          realEmail: "info@cobana.de", 
-          procurementEmail: "einkauf@cobana.de", 
-          realPhone: "+49 40 4712-0", 
-          headquartersAddress: "Neue Gröningerstraße 10, 20457 Hamburg, Germany" 
-        },
-        { 
-          name: "Agrarfrost Coldchain Logistics GmbH", 
-          type: "Frozen Food Company", 
-          city: "Wildeshausen", 
-          domain: "agrarfrost.de", 
-          realEmail: "info@agrarfrost.de", 
-          procurementEmail: "logistics@agrarfrost.de", 
-          realPhone: "+49 4434 87-0", 
-          headquartersAddress: "Aldrup 3, 27793 Wildeshausen, Germany" 
-        },
-        { 
-          name: "Zentis Fruchtwelt Procurement", 
-          type: "Food Factory", 
-          city: "Aachen", 
-          domain: "zentis.de", 
-          realEmail: "info@zentis.de", 
-          procurementEmail: "einkauf@zentis.de", 
-          realPhone: "+49 241 4760-0", 
-          headquartersAddress: "Jülicher Straße 125, 52070 Aachen, Germany" 
-        },
-        { 
-          name: "BioTropic GmbH International Imports", 
-          type: "Importer & Distributor", 
-          city: "Duisburg", 
-          domain: "biotropic.com", 
-          realEmail: "info@biotropic.com", 
-          procurementEmail: "import@biotropic.com", 
-          realPhone: "+49 203 518 760", 
-          headquartersAddress: "Daimlerstraße 4, 47167 Duisburg, Germany" 
-        },
-        { 
-          name: "Transgourmet Deutschland GmbH", 
-          type: "Food Service Distributor", 
-          city: "Riedstadt", 
-          domain: "transgourmet.de", 
-          realEmail: "kontakt@transgourmet.de", 
-          procurementEmail: "info@transgourmet.de", 
-          realPhone: "+49 6158 925-0", 
-          headquartersAddress: "Albert-Einstein-Straße 15, 64560 Riedstadt, Germany" 
-        }
-      ],
-      "UK": [
-        { 
-          name: "Bakkavor Group plc (Produce Division)", 
-          type: "Food Factory", 
-          city: "London", 
-          domain: "bakkavor.com", 
-          realEmail: "info@bakkavor.com", 
-          procurementEmail: "procurement@bakkavor.com", 
-          realPhone: "+44 20 7907 3300", 
-          headquartersAddress: "Fitzroy Place, 8 Mortimer Street, London W1T 3JJ, UK" 
-        },
-        { 
-          name: "Albert Bartlett & Sons Ltd", 
-          type: "Food Processing / Manufacturing", 
-          city: "Airdrie", 
-          domain: "albertbartlett.co.uk", 
-          realEmail: "info@albertbartlett.com", 
-          procurementEmail: "sourcing@albertbartlett.com", 
-          realPhone: "+44 1236 762831", 
-          headquartersAddress: "251 Stirling Road, Airdrie ML6 7SP, Scotland, UK" 
-        },
-        { 
-          name: "Brakes Group (Sysco UK Frozen Division)", 
-          type: "Food Service Distributor", 
-          city: "Ashford", 
-          domain: "brake.co.uk", 
-          realEmail: "customer.service@brake.co.uk", 
-          procurementEmail: "sourcing@brake.co.uk", 
-          realPhone: "+44 1233 206000", 
-          headquartersAddress: "Enterprise House, Eureka Business Park, Ashford TN25 4AG, UK" 
-        },
-        { 
-          name: "Bidfood UK (Frozen Foods Procurement)", 
-          type: "Food Service Distributor", 
-          city: "Slough", 
-          domain: "bidfood.co.uk", 
-          realEmail: "advice_centre@bidfood.co.uk", 
-          procurementEmail: "customer_services@bidfood.co.uk", 
-          realPhone: "+44 1494 555900", 
-          headquartersAddress: "814 Leigh Road, Slough SL1 4BD, UK" 
-        },
-        { 
-          name: "Poupart Group Ltd (Fresh & Frozen)", 
-          type: "Importer & Distributor", 
-          city: "Broxbourne", 
-          domain: "poupart.co.uk", 
-          realEmail: "info@poupart.co.uk", 
-          procurementEmail: "sales@poupart.co.uk", 
-          realPhone: "+44 1992 780000", 
-          headquartersAddress: "Turnford Place, Great Cambridge Road, Broxbourne EN10 6NH, UK" 
-        },
-        { 
-          name: "Turners (Soham) Cold Chain & Produce Ltd", 
-          type: "Wholesaler", 
-          city: "Newmarket", 
-          domain: "turners-soham.com", 
-          realEmail: "enquiries@turners-soham.com", 
-          procurementEmail: "traffic@turners-soham.com", 
-          realPhone: "+44 1638 720335", 
-          headquartersAddress: "Fordham Road, Newmarket, Suffolk CB8 7NR, UK" 
-        },
-        { 
-          name: "Fresca Group Ltd (Direct Sourcing)", 
-          type: "Importer & Distributor", 
-          city: "Paddock Wood", 
-          domain: "frescagroup.co.uk", 
-          realEmail: "info@frescagroup.co.uk", 
-          procurementEmail: "commercial@frescagroup.co.uk", 
-          realPhone: "+44 1892 831200", 
-          headquartersAddress: "The Fresh Produce Centre, Transfesa Road, Paddock Wood TN12 6UT, UK" 
-        },
-        { 
-          name: "Worldwide Fruit Ltd", 
-          type: "Importer & Distributor", 
-          city: "Spalding", 
-          domain: "worldwidefruit.co.uk", 
-          realEmail: "reception@worldwidefruit.co.uk", 
-          procurementEmail: "info@worldwidefruit.co.uk", 
-          realPhone: "+44 1775 717000", 
-          headquartersAddress: "Apple Way, Wardentree Park, Pinchbeck, Spalding PE11 3UU, UK" 
-        }
-      ],
-      "USA": [
-        { 
-          name: "Sysco Corporation (Specialty Produce & Frozen)", 
-          type: "Food Service Distributor", 
-          city: "Houston", 
-          domain: "sysco.com", 
-          realEmail: "info@sysco.com", 
-          procurementEmail: "corporate_procurement@sysco.com", 
-          realPhone: "+1 281-584-1390", 
-          headquartersAddress: "1390 Enclave Parkway, Houston, TX 77077, USA" 
-        },
-        { 
-          name: "US Foods Procurement Division", 
-          type: "Food Service Distributor", 
-          city: "Chicago", 
-          domain: "usfoods.com", 
-          realEmail: "contactus@usfoods.com", 
-          procurementEmail: "customer_service@usfoods.com", 
-          realPhone: "+1 847-720-8000", 
-          headquartersAddress: "9399 W Higgins Rd, Rosemont, IL 60018, USA" 
-        },
-        { 
-          name: "Baldor Specialty Foods Inc.", 
-          type: "Importer & Distributor", 
-          city: "New York", 
-          domain: "baldorfood.com", 
-          realEmail: "info@baldorfood.com", 
-          procurementEmail: "customerservice@baldorfood.com", 
-          realPhone: "+1 718-860-9100", 
-          headquartersAddress: "155 Food Center Dr, Bronx, NY 10474, USA" 
-        },
-        { 
-          name: "KeHE Distributors LLC", 
-          type: "Wholesaler", 
-          city: "Chicago", 
-          domain: "kehe.com", 
-          realEmail: "customerservice@kehe.com", 
-          procurementEmail: "info@kehe.com", 
-          realPhone: "+1 630-343-0000", 
-          headquartersAddress: "1245 E Diehl Rd, Naperville, IL 60563, USA" 
-        },
-        { 
-          name: "Titan Frozen Fruit LLC", 
-          type: "Frozen Food Company", 
-          city: "Los Angeles", 
-          domain: "titanfrozenfruit.com", 
-          realEmail: "sales@titanfrozenfruit.com", 
-          procurementEmail: "info@titanfrozenfruit.com", 
-          realPhone: "+1 805-346-2114", 
-          headquartersAddress: "2515 E Stowell Rd, Santa Maria, CA 93454, USA" 
-        },
-        { 
-          name: "C.H. Robinson (Robinson Fresh Division)", 
-          type: "Importer & Distributor", 
-          city: "Miami", 
-          domain: "robinsonfresh.com", 
-          realEmail: "robinsonfresh@chrobinson.com", 
-          procurementEmail: "customercare@chrobinson.com", 
-          realPhone: "+1 952-937-8500", 
-          headquartersAddress: "14701 Charlson Rd, Eden Prairie, MN 55347, USA" 
-        },
-        { 
-          name: "United Natural Foods Inc. (UNFI)", 
-          type: "Wholesaler", 
-          city: "Providence", 
-          domain: "unfi.com", 
-          realEmail: "customerservice@unfi.com", 
-          procurementEmail: "customercare@unfi.com", 
-          realPhone: "+1 401-528-8634", 
-          headquartersAddress: "313 Iron Horse Way, Providence, RI 02908, USA" 
-        }
-      ],
-      "France": [
-        { 
-          name: "Greenyard Fresh France SAS", 
-          type: "Importer & Distributor", 
-          city: "Rungis", 
-          domain: "greenyardfresh.fr", 
-          realEmail: "contact@greenyardfresh.fr", 
-          procurementEmail: "commercial@greenyardfresh.fr", 
-          realPhone: "+33 1 49 78 20 00", 
-          headquartersAddress: "15 Boulevard du Delta, 94658 Rungis Cedex, France" 
-        },
-        { 
-          name: "Pomona Group (PassionFroid Division)", 
-          type: "Food Service Distributor", 
-          city: "Paris", 
-          domain: "groupe-pomona.fr", 
-          realEmail: "contact@groupe-pomona.fr", 
-          procurementEmail: "service.clients@passionfroid.fr", 
-          realPhone: "+33 1 55 59 60 00", 
-          headquartersAddress: "3 Avenue du Dr Ténine, 92160 Antony, France" 
-        },
-        { 
-          name: "Sysco France SAS (Surgelés)", 
-          type: "Food Service Distributor", 
-          city: "Lyon", 
-          domain: "sysco.fr", 
-          realEmail: "contact@sysco.fr", 
-          procurementEmail: "service.client@sysco.fr", 
-          realPhone: "+33 4 72 47 15 00", 
-          headquartersAddress: "14 Rue du Bruly, 69007 Lyon, France" 
-        },
-        { 
-          name: "Picard Surgelés Procurement SAS", 
-          type: "Retail Chain Buy-House", 
-          city: "Fontainebleau", 
-          domain: "picard.fr", 
-          realEmail: "service.clients@picard.fr", 
-          procurementEmail: "achats@picard.fr", 
-          realPhone: "+33 1 64 45 10 00", 
-          headquartersAddress: "1 Route Militaire, 77300 Fontainebleau, France" 
-        },
-        { 
-          name: "Compagnie Fruitière SAS", 
-          type: "Importer & Distributor", 
-          city: "Marseille", 
-          domain: "thefruitcompany.com", 
-          realEmail: "contact@thefruitcompany.com", 
-          procurementEmail: "info@thefruitcompany.com", 
-          realPhone: "+33 4 91 10 17 10", 
-          headquartersAddress: "33 Avenue Frédéric Mistral, 13008 Marseille, France" 
-        }
-      ],
-      "Canada": [
-        { 
-          name: "Metro Inc. Sourcing Division", 
-          type: "Retail Chain Buy-House", 
-          city: "Montreal", 
-          domain: "corpo.metro.ca", 
-          realEmail: "consumercare@metro.ca", 
-          procurementEmail: "contact@metro.ca", 
-          realPhone: "+1 514-643-1000", 
-          headquartersAddress: "11011 Boulevard Maurice-Duplessis, Montréal, QC H1C 1V6, Canada" 
-        },
-        { 
-          name: "Sobeys Wholesale & Cold Chain", 
-          type: "Retail Chain Buy-House", 
-          city: "Stellarton", 
-          domain: "sobeyscorporate.com", 
-          realEmail: "customer.care@sobeys.com", 
-          procurementEmail: "sourcing@sobeys.com", 
-          realPhone: "+1 902-752-8371", 
-          headquartersAddress: "115 King St, Stellarton, NS B0K 1S0, Canada" 
-        },
-        { 
-          name: "Gordon Food Service Canada (GFS)", 
-          type: "Food Service Distributor", 
-          city: "Halifax", 
-          domain: "gfs.ca", 
-          realEmail: "customer.care.canada@gfs.com", 
-          procurementEmail: "orders.canada@gfs.com", 
-          realPhone: "+1 905-864-7000", 
-          headquartersAddress: "5500 Logistics Dr, Milton, ON L9T 7E8, Canada" 
-        },
-        { 
-          name: "Sysco Canada Inc. Produce Procurement", 
-          type: "Food Service Distributor", 
-          city: "Toronto", 
-          domain: "sysco.ca", 
-          realEmail: "customercare@sysco.ca", 
-          procurementEmail: "procurement.canada@sysco.ca", 
-          realPhone: "+1 416-234-2666", 
-          headquartersAddress: "21 Four Seasons Pl, Etobicoke, ON M9B 6J8, Canada" 
-        },
-        { 
-          name: "Courchesne Larose Ltd.", 
-          type: "Importer & Distributor", 
-          city: "Montreal", 
-          domain: "courchesnelarose.com", 
-          realEmail: "info@clarose.com", 
-          procurementEmail: "ventes@clarose.com", 
-          realPhone: "+1 514-525-6381", 
-          headquartersAddress: "2005 Boulevard des Laurentides, Laval, QC H7M 2Y6, Canada" 
-        }
-      ],
-      "Italy": [
-        { 
-          name: "Orogel Società Cooperativa Agricola", 
-          type: "Frozen Food Company", 
-          city: "Cesena", 
-          domain: "orogel.it", 
-          realEmail: "info@orogel.it", 
-          procurementEmail: "commerciale@orogel.it", 
-          realPhone: "+39 0547 377111", 
-          headquartersAddress: "Via Dismano 2830, 47522 Cesena (FC), Italy" 
-        },
-        { 
-          name: "Surgital S.p.A. Industrie Alimentari", 
-          type: "Food Factory", 
-          city: "Lavezzola", 
-          domain: "surgital.it", 
-          realEmail: "surgital@surgital.it", 
-          procurementEmail: "commerciale@surgital.it", 
-          realPhone: "+39 0545 80328", 
-          headquartersAddress: "Via Bastia 16/1, 48017 Lavezzola (RA), Italy" 
-        },
-        { 
-          name: "Marr S.p.A. Foodservice Procurement", 
-          type: "Food Service Distributor", 
-          city: "Rimini", 
-          domain: "marr.it", 
-          realEmail: "marr@marr.it", 
-          procurementEmail: "acquisti@marr.it", 
-          realPhone: "+39 0541 746800", 
-          headquartersAddress: "Via Spagna 20, 47921 Rimini (RN), Italy" 
-        }
-      ],
-      "Spain": [
-        { 
-          name: "Mercadona Aprovisionamiento S.A.", 
-          type: "Retail Chain Buy-House", 
-          city: "Valencia", 
-          domain: "mercadona.es", 
-          realEmail: "sugerencias@mercadona.es", 
-          procurementEmail: "compras@mercadona.es", 
-          realPhone: "+34 900 500 103", 
-          headquartersAddress: "Calle Valencia 5, 46016 Tavernes Blanques, Valencia, Spain" 
-        },
-        { 
-          name: "Anecoop S. Coop. División Congelados", 
-          type: "Wholesaler", 
-          city: "Valencia", 
-          domain: "anecoop.com", 
-          realEmail: "info@anecoop.com", 
-          procurementEmail: "comercial@anecoop.com", 
-          realPhone: "+34 96 393 85 00", 
-          headquartersAddress: "Calle Monforte 1, 46010 Valencia, Spain" 
-        },
-        { 
-          name: "Congelados de Navarra S.A.U.", 
-          type: "Frozen Food Company", 
-          city: "Fustiñana", 
-          domain: "congeladosnavarra.com", 
-          realEmail: "info@congeladosnavarra.com", 
-          procurementEmail: "compras@congeladosnavarra.com", 
-          realPhone: "+34 948 84 10 00", 
-          headquartersAddress: "Carretera NA-126 km 8, 31510 Fustiñana, Navarra, Spain" 
-        }
-      ],
-      "Poland": [
-        { 
-          name: "Hortex Sp. z o.o. (Frozen Division)", 
-          type: "Food Factory", 
-          city: "Warsaw", 
-          domain: "hortex.pl", 
-          realEmail: "kontakt@hortex.pl", 
-          procurementEmail: "surowce@hortex.pl", 
-          realPhone: "+48 22 572 10 00", 
-          headquartersAddress: "ul. Mszczonowska 2, 02-337 Warszawa, Poland" 
-        },
-        { 
-          name: "Poltino / P.P.H.U. Polfrost Sp. z o.o.", 
-          type: "Frozen Food Company", 
-          city: "Leżajsk", 
-          domain: "poltino.pl", 
-          realEmail: "poltino@poltino.pl", 
-          procurementEmail: "sekretariat@polfrost.com.pl", 
-          realPhone: "+48 17 240 54 00", 
-          headquartersAddress: "ul. Mickiewicza 148, 37-300 Leżajsk, Poland" 
-        }
-      ]
-    };
+    // Authentic produce & food import company pools by country (dynamically sourced from verified catalog)
+    if (!realCompaniesMap || Object.keys(realCompaniesMap).length === 0) {
+      realCompaniesMap = buildRealCompaniesMap();
+    }
 
     // Realistic managers & directors with explicit roles
     const managerProfilesMap: Record<string, Array<{ name: string; role: string }>> = {
@@ -905,6 +224,26 @@ app.post("/api/gemini/market-finder", async (req, res) => {
         { name: "Jan Kowalski", role: "Dyrektor ds. Zakupów Mrożonek (Head of Frozen Procurement)" },
         { name: "Piotr Nowak", role: "Kierownik Zakupów Owoców i Warzyw IQF" },
         { name: "Anna Wiśniewska", role: "Specjalista ds. Importu i Łańcucha Dostaw" }
+      ],
+      "Netherlands": [
+        { name: "Jan de Vries", role: "Global Sourcing Director - Strategic Produce Partnerships" },
+        { name: "Wouter Jansen", role: "Senior Category Manager - Frozen Foods & Private Label" }
+      ],
+      "Belgium": [
+        { name: "Marc Van Den Bossche", role: "Senior Category Buyer - Frozen Produce" },
+        { name: "Luc Vansteenkiste", role: "Global Sourcing Director - IQF Fruits & Berries" }
+      ],
+      "Japan": [
+        { name: "Kenji Sato", role: "General Manager - Frozen Produce Import Division" },
+        { name: "Takashi Tanaka", role: "Senior Merchandiser - Frozen Foods & Topvalu" }
+      ],
+      "South Korea": [
+        { name: "Min-Jun Kim", role: "Vice President - Global Food Ingredients & Frozen Sourcing" },
+        { name: "Dong-Hyun Park", role: "Senior Category Buyer - Frozen Produce" }
+      ],
+      "Brazil": [
+        { name: "Rodrigo Silva", role: "Diretor de Suprimentos Agroalimentares Globais" },
+        { name: "Juliana Mendes", role: "Gerente Geral de Compras Internacionais - Alimentos Congelados" }
       ]
     };
 
@@ -926,7 +265,10 @@ app.post("/api/gemini/market-finder", async (req, res) => {
       "Italy": "Genoa / Trieste / Salerno Port",
       "Spain": "Valencia Port / Algeciras / Barcelona",
       "Poland": "Gdansk Port / Gdynia",
+      "Netherlands": "Port of Rotterdam / Amsterdam",
+      "Belgium": "Port of Antwerp-Bruges / Zeebrugge",
       "Japan": "Tokyo Port / Yokohama / Kobe",
+      "South Korea": "Busan Port / Incheon",
       "Brazil": "Santos Port / Paranaguá"
     };
 
@@ -936,7 +278,8 @@ app.post("/api/gemini/market-finder", async (req, res) => {
     const phonePrefixMap: Record<string, string> = {
       "USA": "+1 (201) 488-", "Canada": "+1 (416) 732-", "Germany": "+49 (40) 638-", "France": "+33 (1) 428-",
       "Italy": "+39 (02) 892-", "Spain": "+34 (91) 658-", "Poland": "+48 (22) 590-", "UK": "+44 (20) 7946-",
-      "Saudi Arabia": "+966 11 482 ", "UAE": "+971 4 398 ", "Japan": "+81 3 5214-", "Brazil": "+55 11 3845-"
+      "Saudi Arabia": "+966 11 482 ", "UAE": "+971 4 398 ", "Japan": "+81 3 5214-", "Brazil": "+55 11 3845-",
+      "Netherlands": "+31 (10) 798-", "Belgium": "+32 (2) 542-", "South Korea": "+82 2 6740-"
     };
     const phonePrefix = phonePrefixMap[cName] || "+1 555-";
 
@@ -1225,12 +568,12 @@ app.post("/api/gemini/market-finder", async (req, res) => {
 
   // If Fast Mode is requested, return immediate results
   if (mode === "fast" || !aiClient) {
-    return res.json(generateFastMarketReport(country, product, lang));
+    return res.json(generateFastMarketReport(canonicalCountry, product, lang));
   }
 
   try {
     // Retrieve verified real produce and food import companies for this country
-    const verifiedCompaniesList = realCompaniesMap[country] || realCompaniesMap["Germany"] || [];
+    const verifiedCompaniesList = realCompaniesMap[canonicalCountry] || [];
     const verifiedCatalogSummary = verifiedCompaniesList.slice(0, 10).map((c, idx) => 
       `${idx + 1}. Company: "${c.name}", Type: "${c.type}", City: "${c.city}", Official Domain: "${c.domain}", Verified Procurement Email: "${c.procurementEmail}", Official General Email: "${c.realEmail}", Official Phone: "${c.realPhone}", HQ Address: "${c.headquartersAddress}"`
     ).join("\n");
@@ -1361,6 +704,7 @@ Please generate 8-10 high-quality prospective B2B buyers in the "prospects" arra
 // 1.5 Real-Time AI Live Lead Discovery & Hunting (Non-limited, Fresh, Continuously Renewing)
 app.post("/api/gemini/live-lead-hunt", async (req, res) => {
   const { country, product, query = "", existingDomains = [], lang = "ar" } = req.body;
+  const canonicalCountry = normalizeCountryName(country);
 
   if (!country || !product) {
     return res.status(400).json({ error: "Country and Product parameters are required." });
@@ -1375,12 +719,12 @@ app.post("/api/gemini/live-lead-hunt", async (req, res) => {
   if (aiClient) {
     try {
       const prompt = `You are an elite B2B Agricultural & Frozen Produce Import Intelligence Engine.
-Target Country: ${country}
+Target Country: ${canonicalCountry}
 Target Product: ${product} (Fresh & frozen fruits, vegetables, IQF crops exported by Galina Egypt)
 User Specific Custom Query: "${query}"
 DO NOT suggest any of these already known company domains: ${JSON.stringify(excludedDomainsList)}
 
-Discover 8 to 10 REAL, AUTHENTIC commercial food/produce import companies, supermarket retail chains, foodservice broadline distributors, or frozen food processing factories located in ${country} that buy/import produce, fruit purees, frozen berries, or agricultural vegetables.
+Discover 8 to 10 REAL, AUTHENTIC commercial food/produce import companies, supermarket retail chains, foodservice broadline distributors, or frozen food processing factories located in ${canonicalCountry} that buy/import produce, fruit purees, frozen berries, or agricultural vegetables.
 Every single company must be an actual, existing business with a real corporate domain.
 
 Return ONLY a valid JSON array matching this exact schema:
@@ -1458,7 +802,7 @@ Return ONLY a valid JSON array matching this exact schema:
             return {
               id: `ai-hunt-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`,
               name: item.name,
-              country: country,
+              country: canonicalCountry,
               city: item.city || "Commercial Sourcing Center",
               website: cleanWebsite,
               email: pEmail,
@@ -1466,7 +810,7 @@ Return ONLY a valid JSON array matching this exact schema:
               realEmail: rEmail,
               phone: item.phone || "+1 555-0199",
               realPhone: item.phone || "+1 555-0199",
-              headquartersAddress: item.headquartersAddress || `${item.city || 'Central District'}, ${country}`,
+              headquartersAddress: item.headquartersAddress || `${item.city || 'Central District'}, ${canonicalCountry}`,
               contactVerified: true,
               emailVerificationStatus: "VERIFIED – OFFICIAL COMPANY SOURCE" as const,
               emailVerificationSource: `Live AI Global Lead Hunt Registry (${cleanDomain})`,
@@ -1526,7 +870,7 @@ Return ONLY a valid JSON array matching this exact schema:
   }
 
   // 2. Curated Global Expansion Fallback
-  const knownBuyers = (realCompaniesMap[country] || []).filter(c => {
+  const knownBuyers = (realCompaniesMap[canonicalCountry] || []).filter(c => {
     const d = c.domain.toLowerCase().trim();
     return !excludedDomainsList.includes(d);
   });

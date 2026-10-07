@@ -66,7 +66,7 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
   const [filterIncoterm, setFilterIncoterm] = useState("All");
   const [filterChannel, setFilterChannel] = useState("All");
   const [sortBy, setSortBy] = useState("intent");
-  const [searchScope, setSearchScope] = useState<"current" | "global">("global");
+  const [searchScope, setSearchScope] = useState<"current" | "global">("current");
   const [hunting, setHunting] = useState(false);
   
   // Pagination State
@@ -626,15 +626,17 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
     document.body.removeChild(link);
   };
 
-  // Filter prospects with ultra-accurate bilingual search & deduplication
+  // Filter prospects with ultra-accurate bilingual search & strict country isolation
   const getFilteredProspects = () => {
     const currentProspects = (report && report.prospects && report.prospects.length > 0)
       ? report.prospects
-      : VERIFIED_GLOBAL_BUYERS;
+      : VERIFIED_GLOBAL_BUYERS.filter(b => b.country.toLowerCase() === (selectedCountry?.name || "").toLowerCase());
 
-    // When searchScope is "global" OR an active search term is typed, search across the entire verified catalog
+    const isGlobal = searchScope === "global";
     let searchPool = currentProspects;
-    if (searchScope === "global" || searchQuery.trim().length > 0) {
+
+    // Only expand search pool across all countries if user explicitly toggled global search
+    if (isGlobal) {
       const combined = [...currentProspects];
       const seen = new Set(currentProspects.map((b: any) => (b.name || "").toLowerCase().trim()));
       for (const vb of VERIFIED_GLOBAL_BUYERS) {
@@ -648,7 +650,7 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
     }
 
     let list = searchBuyersAdvanced(searchPool, searchQuery, {
-      filterCountry: (searchScope === "global" || searchQuery.trim().length > 0) ? undefined : (selectedCountry?.name || undefined),
+      filterCountry: isGlobal ? undefined : (selectedCountry?.name || undefined),
       filterType,
       filterCrop,
       filterCert,
@@ -990,6 +992,49 @@ export default function MarketFinder({ products, countries, onAddProspect }: Mar
 
             {/* Search and Filters Controls */}
             <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 space-y-3">
+              {/* Country Scope Toggle & Zero Overlap Indicator */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white px-3 py-2 rounded-lg border border-slate-200 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                    <span>{selectedCountry?.flag || "🌍"}</span>
+                    <span>{lang === "ar" ? "نطاق البحث الجغرافي:" : "Geographic Search Scope:"}</span>
+                  </span>
+                  <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50">
+                    <button
+                      type="button"
+                      onClick={() => { setSearchScope("current"); setCurrentPage(1); }}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer ${
+                        searchScope === "current"
+                          ? "bg-teal-600 text-white shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      {lang === "ar" ? `دولة ${selectedCountry?.name || ""} فقط (دقيق 100%)` : `${selectedCountry?.name || "Country"} Only (Zero Overlap)`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSearchScope("global"); setCurrentPage(1); }}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer ${
+                        searchScope === "global"
+                          ? "bg-indigo-600 text-white shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      {lang === "ar" ? "كافة الأسواق الدولية (15 دولة)" : "All Global Markets (15 Countries)"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-teal-700 bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100 font-medium flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse"></span>
+                  <span>
+                    {searchScope === "current" 
+                      ? (lang === "ar" ? `عزل جغرافي تام: معروض عملاء ${selectedCountry?.name} فقط بدون أي تداخل` : `Strict isolation: Only ${selectedCountry?.name} buyers shown, 0 overlap`)
+                      : (lang === "ar" ? "بحث موسع يشمل كافة المستوردين الدوليين" : "Searching across all 15 international countries")}
+                  </span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5">
                 {/* Search box */}
                 <div className="relative md:col-span-5">
